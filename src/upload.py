@@ -9,6 +9,7 @@ def compare_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Compare the new data with the existing data in the database.
     """
+
     # Get the existing data from the database
     existing_data = pd.read_sql("SELECT * FROM badminton_courts", CONN)
 
@@ -16,7 +17,9 @@ def compare_data(df: pd.DataFrame) -> pd.DataFrame:
     if existing_data.empty:
         return df
     else:
-        new_data = df[~df[["facility_name", "start_datetime", "num_people"]].isin(existing_data)].dropna()
+        existing_data = existing_data.set_index(['facility_name', 'start_datetime', 'end_datetime'])
+        df = df.set_index(['facility_name', 'start_datetime', 'end_datetime'])
+        new_data = df.loc[df.index.difference(existing_data.index)].reset_index()
         return new_data
 
 def prepare_transaction(df: pd.DataFrame) -> str:

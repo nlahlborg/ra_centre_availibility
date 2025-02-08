@@ -1,6 +1,6 @@
-from src.query import get_availability
+from src.web_query import get_availability
 from src.parser import parse_availability_data
-from src.upload import prepare_transaction
+from src.upload import prepare_transaction, save_data
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
