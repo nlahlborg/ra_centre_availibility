@@ -17,8 +17,8 @@ def compare_data(df: pd.DataFrame) -> pd.DataFrame:
     if existing_data.empty:
         return df
     else:
-        existing_data = existing_data.set_index(['facility_name', 'start_datetime', 'end_datetime'])
-        df = df.set_index(['facility_name', 'start_datetime', 'end_datetime'])
+        existing_data = existing_data.set_index(['facility_name', 'start_datetime', 'num_people'])
+        df = df.set_index(['facility_name', 'start_datetime', 'num_people'])
         new_data = df.loc[df.index.difference(existing_data.index)].reset_index()
         return new_data
 
