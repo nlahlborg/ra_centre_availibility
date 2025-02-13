@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from sqlalchemy import create_engine
 
 from src.web_query import get_availability
@@ -9,7 +10,7 @@ from src.setup import load_env_file, get_mysql_connect_string
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-load_env_file(".env")
+load_env_file(str(Path(__file__).parent / ".env"))
 ENGINE = create_engine(get_mysql_connect_string())
 
 # Create logs directory if it doesn't exist
