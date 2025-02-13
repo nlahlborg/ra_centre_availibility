@@ -1,0 +1,12 @@
+# docker-compose.yml
+version: "3.9"  # Specify the docker-compose version
+
+services:
+  web:
+    build: .  # Build the image using the Dockerfile in the current directory
+    ports:
+      - "8082:8082"   
+    volumes:
+      - ./app.py:/app/app.py
+      - ./logs:/app/logs  # Mount logs to /app/logs inside the container
+    restart: always # Restart the container if it crashes (optional)
