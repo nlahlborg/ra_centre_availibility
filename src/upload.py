@@ -1,30 +1,32 @@
-import sqlite3
 import pandas as pd
 import logging
 
 logger = logging.getLogger("data_parser")
-CONN = sqlite3.connect('.database\\ra_centre_availability.db')
 
-def compare_data(df: pd.DataFrame) -> pd.DataFrame:
+def compare_data(df: pd.DataFrame, conn) -> pd.DataFrame:
     """
     Compare the new data with the existing data in the database.
     """
+
     # Get the existing data from the database
-    existing_data = pd.read_sql("SELECT * FROM badminton_courts", CONN)
+    existing_data = pd.read_sql("SELECT * FROM badminton_courts", conn)
 
     # Check if the new data is already in the database
     if existing_data.empty:
         return df
     else:
-        new_data = df[~df[["facility_name", "start_datetime", "num_people"]].isin(existing_data)].dropna()
+        existing_data = existing_data.set_index(['facility_name', 'start_datetime', 'num_people'])
+        df = df.set_index(['facility_name', 'start_datetime', 'num_people'])
+        new_data = df.loc[df.index.difference(existing_data.index)].reset_index()
         return new_data
 
-def prepare_transaction(df: pd.DataFrame) -> str:
+def prepare_transaction(df: pd.DataFrame, conn: str) -> str:
     """
-    Prepare the transaction string for the database.
+    depricated
+    Prepare the sqlite3 transaction string for the database.
     """
-    new_data = compare_data(df)
-
+    new_data = compare_data(df, conn)
+    
     transation = "BEGIN TRANSACTION;\n"
     for index, row in new_data.iterrows():
         transation += f"""
@@ -36,14 +38,15 @@ def prepare_transaction(df: pd.DataFrame) -> str:
     transation += "COMMIT;"
     return transation, n_rows
 
-def save_data(transaction):
+def save_data(transaction: str, conn: str):
     """
-    Save the data to the database.
+    depricated
+    Save the data to the sqlite database.
     """
     try:
-        CONN.executescript(transaction)
-        CONN.commit()
+        conn.executescript(transaction)
+        conn.commit()
         logger.info("Data saved to the database.")	
     except Exception as e:
-        CONN.rollback()
+        conn.rollback()
         raise e

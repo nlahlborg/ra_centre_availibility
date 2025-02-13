@@ -1,10 +1,16 @@
-from src.query import get_availability
+import os
+from sqlalchemy import create_engine
+
+from src.web_query import get_availability
 from src.parser import parse_availability_data
-from src.upload import prepare_transaction
+from src.upload import compare_data
+from src.setup import load_env_file, get_mysql_connect_string
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
-import os
+
+load_env_file(".env")
+ENGINE = create_engine(get_mysql_connect_string())
 
 # Create logs directory if it doesn't exist
 if not os.path.exists('logs'):
@@ -34,15 +40,19 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
 if __name__ == "__main__":
+    #scrape data
     logger.info("preparing to get availability data")
     response = get_availability()
     data = response[0]["result"]["data"]
     df = parse_availability_data(data)
-    transaction_string, n_rows = prepare_transaction(df)
-    logger.info(f"Number of new rows: {n_rows}")
+
+    #save to mysql
+    df_new = compare_data(df, ENGINE)
+    n_rows = df_new.shape[0]
+    logger.info(f"Number of new rows for mysql: {n_rows}")
 
     if n_rows > 0:
-        logger.info("saving data to the database")
-        save_data(transaction_string)
+        logger.info("saving data to the mysql database")
+        df_new.to_sql("badminton_courts", ENGINE, if_exists="append")
     else:
-        logger.info("no new data to save")
+        logger.info("no new data to save for mysql")

@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import logging
 
 
@@ -31,8 +31,8 @@ def parse_availability_data(data: List[Dict[str, Any]]) -> pd.DataFrame | None:
 
             sub_df = pd.DataFrame({
                 "facility_name": item.get("facilityName"),
-                "start_datetime": start_datetime,
-                "end_datetime": end_datetime,
+                "start_datetime": start_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                "end_datetime": end_datetime.strftime("%Y-%m-%d %H:%M:%S"),
                 "num_people": item.get("numPeople"),
                 "has_reg_ended": item.get("hasRegEnded"),
                 "inserted_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
