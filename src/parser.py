@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import logging
 
 
