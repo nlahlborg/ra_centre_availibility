@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import logging
 
+from src.setup import TZ
 
 logger = logging.getLogger("data_parser")
 
@@ -35,7 +36,7 @@ def parse_availability_data(data: List[Dict[str, Any]]) -> pd.DataFrame | None:
                 "end_datetime": end_datetime.strftime("%Y-%m-%d %H:%M:%S"),
                 "num_people": item.get("numPeople"),
                 "has_reg_ended": item.get("hasRegEnded"),
-                "inserted_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "inserted_datetime": datetime.now().astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
                 }, index=[0])
             data_list.append(sub_df)
 

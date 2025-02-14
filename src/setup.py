@@ -1,5 +1,8 @@
 import dotenv
 import os
+import pytz
+
+TZ = pytz.UTC
 
 def load_env_file(filepath):
     """Loads environment variables from a .env file.
