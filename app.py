@@ -1,11 +1,12 @@
 import os
+from datetime import datetime, UTC
 from pathlib import Path
 from sqlalchemy import create_engine
 
 from src.web_query import get_availability
 from src.parser import parse_availability_data
 from src.upload import compare_data
-from src.setup import load_env_file, get_mysql_connect_string
+from src.setup import load_env_file, get_mysql_connect_string, TZ
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -31,8 +32,14 @@ file_handler = TimedRotatingFileHandler('logs/app.log', when='midnight', interva
 file_handler.setLevel(logging.INFO)
 file_handler.suffix = "%Y-%m-%d"
 
-# Create formatter and add it to the handlers
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Create a custom formatter
+class PSTFormatter(logging.Formatter):
+    def converter(self, timestamp):
+        utc_dt = datetime.fromtimestamp(timestamp, UTC)
+        pst_dt = utc_dt.astimezone(TZ)
+        return pst_dt.timetuple()  # Return a time tuple
+
+formatter = PSTFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
 

@@ -13,6 +13,7 @@ def compare_data(df: pd.DataFrame, conn) -> pd.DataFrame:
         SELECT facility_name, start_datetime, num_people 
         FROM badminton_courts
         WHERE start_datetime >= \"{df['start_datetime'].min()}\"
+        LIMIT 1000
         """
     existing_data = pd.read_sql(query, conn)
 
