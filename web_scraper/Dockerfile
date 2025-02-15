@@ -7,7 +7,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 
 COPY src /app/src
 COPY tests /app/tests
-COPY .env /app/.env
+COPY ../.env /.env
 RUN mkdir -p /app/logs
 
 # Install cron
