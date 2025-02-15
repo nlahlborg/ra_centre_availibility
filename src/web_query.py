@@ -38,7 +38,7 @@ def get_context_auth(text: str) -> dict | None:
     gets the payload context information by making a get request to the website and 
     parsing the html result
     """
-    regex_str = "(?:\()({\"vf\":.*)(?:\)\);)"
+    regex_str = r"(?:\()({\"vf\":.*)(?:\)\);)"
     json_string = re.findall(regex_str, text)[0]
 
     try:

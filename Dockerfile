@@ -5,7 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt --no-cache-dir
 
-COPY . /app
+COPY src /app/src
+COPY tests /app/tests
+COPY .env /app/.env
+RUN mkdir -p /app/logs
 
 # Install cron
 RUN apt-get update && apt-get install -y cron

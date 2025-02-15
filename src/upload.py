@@ -8,8 +8,14 @@ def compare_data(df: pd.DataFrame, conn) -> pd.DataFrame:
     Compare the new data with the existing data in the database.
     """
 
-    # Get the existing data from the database
-    existing_data = pd.read_sql("SELECT * FROM badminton_courts", conn)
+    # construct the query
+    query = f"""
+        SELECT facility_name, start_datetime, num_people 
+        FROM badminton_courts
+        WHERE start_datetime >= \"{df['start_datetime'].min()}\"
+        LIMIT 1000
+        """
+    existing_data = pd.read_sql(query, conn)
 
     # Check if the new data is already in the database
     if existing_data.empty:
