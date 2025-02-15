@@ -11,7 +11,7 @@ from src.setup import load_env_file, get_mysql_connect_string, TZ
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-load_env_file(str(Path(__file__).parent / ".env"))
+load_env_file(str(Path(__file__).parent.parent / ".env"))
 ENGINE = create_engine(get_mysql_connect_string())
 
 # Create logs directory if it doesn't exist
