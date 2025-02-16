@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import logging
 
-from src.setup import TZ
+from web_scraper.src.setup import TZ
 
 logger = logging.getLogger("data_parser")
 

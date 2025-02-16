@@ -3,10 +3,10 @@ from datetime import datetime, UTC
 from pathlib import Path
 from sqlalchemy import create_engine
 
-from src.web_query import get_availability
-from src.parser import parse_availability_data
-from src.upload import compare_data
-from src.setup import load_env_file, get_mysql_connect_string, TZ
+from web_scraper.src.web_query import get_availability
+from web_scraper.src.parser import parse_availability_data
+from web_scraper.src.upload import compare_data
+from web_scraper.src.setup import load_env_file, get_mysql_connect_string, TZ
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -28,7 +28,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
 # Create file handler which logs even debug messages
-file_handler = TimedRotatingFileHandler('logs/app.log', when='midnight', interval=1)
+file_handler = TimedRotatingFileHandler('logs/app.log', when='midnight', interval=1, backupCount=7)
 file_handler.setLevel(logging.INFO)
 file_handler.suffix = "%Y-%m-%d"
 
@@ -47,7 +47,7 @@ file_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
-if __name__ == "__main__":
+def main():
     #scrape data
     logger.info("preparing to get availability data")
     response = get_availability()
