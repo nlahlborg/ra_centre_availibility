@@ -40,6 +40,7 @@ def get_existing_data(min_start_datetime: str, conn: mysql.connector.connection.
     cursor = conn.cursor(dictionary=True)
     cursor.execute(query)
     existing_data = cursor.fetchall()
+    cursor.close()
 
     return existing_data
 

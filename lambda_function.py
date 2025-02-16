@@ -12,6 +12,3 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps(f'number of rows written is {result}')
     }
-
-if __name__ == "__main__":
-    lambda_handler("", "")
