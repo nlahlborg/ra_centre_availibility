@@ -1,3 +1,6 @@
+import datetime
+from pytz import UTC
+
 HTML_PAYLOAD_SAMPLE = """
 <!DOCTYPE HTML>
 
@@ -62,3 +65,60 @@ RESPONSE_DATA_SAMPLE_BADMINTON = [
         ]
     }
 ]
+
+EXISTING_DB_DATA = [
+    {'facility_name': 'Badminton Court 1',
+    'start_datetime': datetime.datetime(2025, 2, 16, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 16, 14, 0),
+    'num_people': 0,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 16, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 1', datetime.datetime(2025, 2, 16, 13, 0)),
+    'index2': ('Badminton Court 1', datetime.datetime(2025, 2, 16, 13, 0), 0)},
+    {'facility_name': 'Badminton Court 2',
+    'start_datetime': datetime.datetime(2025, 2, 16, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 16, 14, 0),
+    'num_people': 0,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 16, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 2', datetime.datetime(2025, 2, 16, 13, 0)),
+    'index2': ('Badminton Court 2', datetime.datetime(2025, 2, 16, 13, 0), 0)}
+    ]
+
+NEW_DB_DATA = [
+    {'facility_name': 'Badminton Court 1',
+    'start_datetime': datetime.datetime(2025, 2, 17, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 17, 14, 0),
+    'num_people': 0,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 16, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 1', datetime.datetime(2025, 2, 17, 13, 0)),
+    'index2': ('Badminton Court 1', datetime.datetime(2025, 2, 17, 13, 0), 0)},
+    {'facility_name': 'Badminton Court 2',
+    'start_datetime': datetime.datetime(2025, 2, 17, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 17, 14, 0),
+    'num_people': 0,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 17, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 2', datetime.datetime(2025, 2, 17, 13, 0)),
+    'index2': ('Badminton Court 2', datetime.datetime(2025, 2, 17, 13, 0), 0)}
+    ]
+
+CHANGED_DB_DATA = [
+    {'facility_name': 'Badminton Court 1',
+    'start_datetime': datetime.datetime(2025, 2, 16, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 16, 14, 0),
+    'num_people': 0,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 17, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 1', datetime.datetime(2025, 2, 16, 13, 0)),
+    'index2': ('Badminton Court 1', datetime.datetime(2025, 2, 16, 13, 0), 0)},
+    {'facility_name': 'Badminton Court 2',
+    'start_datetime': datetime.datetime(2025, 2, 16, 13, 0),
+    'end_datetime': datetime.datetime(2025, 2, 16, 14, 0),
+    'num_people': 1,
+    'has_reg_ended': False,
+    'inserted_datetime': datetime.datetime(2025, 2, 17, 20, 4, 8, 676798, tzinfo=UTC),
+    'index1': ('Badminton Court 2', datetime.datetime(2025, 2, 16, 13, 0)),
+    'index2': ('Badminton Court 2', datetime.datetime(2025, 2, 16, 13, 0), 1)}
+    ]

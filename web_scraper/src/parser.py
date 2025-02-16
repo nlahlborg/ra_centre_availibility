@@ -1,13 +1,14 @@
-import pandas as pd
 from datetime import datetime
 from typing import List, Dict, Any
 import logging
 
-from web_scraper.src.setup import TZ
+from web_scraper.src.setup import DB_TZ, INDEX1, INDEX2
+
+DataObject = List[Dict[str, Any]]
 
 logger = logging.getLogger("data_parser")
 
-def parse_availability_data(data: List[Dict[str, Any]]) -> pd.DataFrame | None:
+def parse_availability_data(data: DataObject) -> DataObject | None:
     """
     Parses availability data from a json_object and returns a Pandas DataFrame.
 
@@ -30,22 +31,23 @@ def parse_availability_data(data: List[Dict[str, Any]]) -> pd.DataFrame | None:
                 start_datetime = None
                 end_datetime = None
 
-            sub_df = pd.DataFrame({
+            data_line = {
                 "facility_name": item.get("facilityName"),
-                "start_datetime": start_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-                "end_datetime": end_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                "start_datetime": start_datetime,
+                "end_datetime": end_datetime,
                 "num_people": item.get("numPeople"),
                 "has_reg_ended": item.get("hasRegEnded"),
-                "inserted_datetime": datetime.now().astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
-                }, index=[0])
-            data_list.append(sub_df)
+                "inserted_datetime": datetime.now().astimezone(DB_TZ)
+            }
+            data_line["index1"] = tuple([data_line[col] for col in INDEX1])
+            data_line["index2"] = tuple([data_line[col] for col in INDEX2])
+            data_list.append(data_line)
 
         except (ValueError, TypeError) as e:
             logger.warning(f"Error processing item: {item.get('name')}. Error: {e}")
             continue
 
     if data_list:
-        df = pd.concat(data_list).reset_index(drop=True)
-        return df
+        return data_list
     else:
         return None
