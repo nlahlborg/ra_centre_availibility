@@ -1,18 +1,17 @@
 import os
 from datetime import datetime, UTC
 from pathlib import Path
-from sqlalchemy import create_engine
 
 from web_scraper.src.web_query import get_availability
 from web_scraper.src.parser import parse_availability_data
-from web_scraper.src.upload import compare_data
-from web_scraper.src.setup import load_env_file, get_mysql_connect_string, TZ
+from web_scraper.src.upload import get_only_new_data, prepare_transaction, save_data
+from web_scraper.src.setup import load_env_file, DB_TZ, db_connect
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
 load_env_file(str(Path(__file__).parent.parent / ".env"))
-ENGINE = create_engine(get_mysql_connect_string())
+CONN = db_connect()
 
 # Create logs directory if it doesn't exist
 if not os.path.exists('logs'):
@@ -36,7 +35,7 @@ file_handler.suffix = "%Y-%m-%d"
 class PSTFormatter(logging.Formatter):
     def converter(self, timestamp):
         utc_dt = datetime.fromtimestamp(timestamp, UTC)
-        pst_dt = utc_dt.astimezone(TZ)
+        pst_dt = utc_dt.astimezone(DB_TZ)
         return pst_dt.timetuple()  # Return a time tuple
 
 formatter = PSTFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -52,15 +51,16 @@ def main():
     logger.info("preparing to get availability data")
     response = get_availability()
     data = response[0]["result"]["data"]
-    df = parse_availability_data(data)
+    dict_list = parse_availability_data(data)
 
     #save to mysql
-    df_new = compare_data(df, ENGINE)
-    n_rows = df_new.shape[0]
+    data_new = get_only_new_data(dict_list, CONN)
+    n_rows = len(data_new)
     logger.info(f"Number of new rows for mysql: {n_rows}")
 
     if n_rows > 0:
         logger.info("saving data to the mysql database")
-        df_new.to_sql("badminton_courts", ENGINE, if_exists="append")
+        sql = prepare_transaction(data_new)
+        save_data(sql, CONN)
     else:
         logger.info("no new data to save for mysql")
