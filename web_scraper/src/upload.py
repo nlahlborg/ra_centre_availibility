@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import logging
 import mysql.connector 
 
-from web_scraper.src.setup import RA_CENTRE_TZ, INDEX1, INDEX2, ALL_COLS
+from src.setup import RA_CENTRE_TZ, ALL_COLS
 
 DataObject = List[Dict[str, Any]]
 
@@ -14,16 +14,16 @@ def compare_data(data: DataObject, existing_data: DataObject) -> DataObject:
         return data
     else:
         # Create set of existing tuples
-        existing_set = set(tuple(row[col] for col in INDEX2) for row in existing_data)
-        input_set = set(row["index2"] for row in data)
+        existing_indexes = set(row["display_name"] for row in existing_data)
+        input_indexes = set(row["display_name"] for row in data)
 
-        new_rows_tuples = list(input_set.difference(existing_set))
+        new_rows_indexes = list(input_indexes.difference(existing_indexes))
 
         # Find new rows in the original data set
         new_data = []     
-        data_index = [row["index1"] for row in data]   
-        for row in new_rows_tuples:
-            new_data.append(data[data_index.index(tuple([row[INDEX1.index(col)] for col in INDEX1]))])
+        data_index = [row["display_name"] for row in data]   
+        for idx in new_rows_indexes:
+            new_data.append(data[data_index.index(idx)])
 
         return new_data
 

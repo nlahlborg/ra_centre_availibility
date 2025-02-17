@@ -5,9 +5,7 @@ import mysql.connector
 
 DB_TZ = pytz.UTC
 RA_CENTRE_TZ = pytz.timezone('US/Pacific') # timestamps from RA center website are in pacific time
-INDEX1 = ["facility_name", "start_datetime"]
-INDEX2 = ["facility_name", "start_datetime", "num_people"]
-ALL_COLS = ["facility_name", "start_datetime", "end_datetime", "num_people", "has_reg_ended", "inserted_datetime"]
+ALL_COLS = ["display_name", "facility_name", "start_datetime", "end_datetime", "num_people", "has_reg_ended", "inserted_datetime"]
 
 
 def load_env_file(filepath):

@@ -1,10 +1,10 @@
 from datetime import datetime, UTC
 from pathlib import Path
 
-from web_scraper.src.web_query import get_availability
-from web_scraper.src.parser import parse_availability_data
-from web_scraper.src.upload import get_only_new_data, prepare_transaction, save_data
-from web_scraper.src.setup import load_env_file, DB_TZ, db_connect
+from src.web_query import get_availability
+from src.parser import parse_availability_data
+from src.upload import get_only_new_data, prepare_transaction, save_data
+from src.setup import load_env_file, DB_TZ, db_connect
 
 import logging
 #from logging.handlers import TimedRotatingFileHandler
@@ -73,3 +73,6 @@ def main():
     except Exception as e:
         conn.close()
         raise(e)
+
+if __name__ == "__main__":
+    _ = main()

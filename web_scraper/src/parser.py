@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import logging
 
-from web_scraper.src.setup import DB_TZ, INDEX1, INDEX2
+from src.setup import DB_TZ
 
 DataObject = List[Dict[str, Any]]
 
@@ -32,6 +32,7 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
                 end_datetime = None
 
             data_line = {
+                "display_name": item.get("name"),
                 "facility_name": item.get("facilityName"),
                 "start_datetime": start_datetime,
                 "end_datetime": end_datetime,
@@ -39,8 +40,6 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
                 "has_reg_ended": item.get("hasRegEnded"),
                 "inserted_datetime": datetime.now().astimezone(DB_TZ)
             }
-            data_line["index1"] = tuple([data_line[col] for col in INDEX1])
-            data_line["index2"] = tuple([data_line[col] for col in INDEX2])
             data_list.append(data_line)
 
         except (ValueError, TypeError) as e:
