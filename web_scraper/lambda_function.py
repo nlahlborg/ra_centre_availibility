@@ -1,5 +1,5 @@
 import json
-from web_scraper.main import main
+from main import main
 import logging
 
 logger = logging.getLogger()
