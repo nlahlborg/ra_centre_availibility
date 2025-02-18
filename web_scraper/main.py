@@ -9,7 +9,7 @@ from src.setup import load_env_file, DB_TZ, db_connect
 import logging
 #from logging.handlers import TimedRotatingFileHandler
 
-load_env_file(str(Path(__file__).parent.parent / ".env"))
+load_env_file(str(Path(__file__).parent / ".env"))
 
 # Create logs directory if it doesn't exist
 # if not os.path.exists('logs'):
@@ -53,7 +53,7 @@ def main():
     logger.info(f"received {len(dict_list)} items from ra centre site")
 
     #save to mysql
-    conn = db_connect()
+    server, conn = db_connect()
     try:
         data_new = get_only_new_data(dict_list, conn)
         n_rows = len(data_new)
@@ -67,11 +67,13 @@ def main():
             logger.info("no new data to save for mysql")
 
         conn.close()
+        server.stop()
 
         return n_rows
     
     except Exception as e:
         conn.close()
+        server.stop()
         raise(e)
 
 if __name__ == "__main__":

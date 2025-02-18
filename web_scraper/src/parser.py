@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytz
 from typing import List, Dict, Any
 import logging
 
@@ -33,6 +34,7 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
 
             data_line = {
                 "display_name": item.get("name"),
+                "code": item.get("code"),
                 "facility_name": item.get("facilityName"),
                 "start_datetime": start_datetime,
                 "end_datetime": end_datetime,
@@ -40,6 +42,15 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
                 "has_reg_ended": item.get("hasRegEnded"),
                 "inserted_datetime": datetime.now().astimezone(DB_TZ)
             }
+
+            #make the unique slot id
+            this_year = datetime.now(tz=pytz.timezone("US/Eastern")).year
+            date_str = datetime.strptime(
+                data[0]["name"].split(" - ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
+                ).replace(year=this_year).strftime("%Y%m%d%H%M")
+            slot_id = date_str + "_" + data[0]["facilityName"].lower().replace(" ", "_")
+            
+            data_line["slot_id"] = slot_id
             data_list.append(data_line)
 
         except (ValueError, TypeError) as e:

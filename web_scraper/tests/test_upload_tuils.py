@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
-sys.path.insert(1, str(Path(__file__).parent.parent.parent))
+sys.path.insert(1, str(Path(__file__).parent.parent))
 
-from web_scraper.src.upload import compare_data
+from src.upload import compare_data
 from data_constants import EXISTING_DB_DATA, NEW_DB_DATA, CHANGED_DB_DATA
 
 def test_compare_data_same_data():
@@ -27,4 +27,4 @@ def test_compare_data_changed_data():
 
     result = compare_data(data1, data2)
 
-    assert len(result) == 1, "expected to return object with only hte changed data"
+    assert len(result) == 1, "expected to return object with only the changed data"
