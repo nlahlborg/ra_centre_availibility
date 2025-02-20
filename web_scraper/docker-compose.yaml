@@ -6,7 +6,15 @@ services:
     build: .  # Build the image using the Dockerfile in the current directory
     ports:
       - "8082:8082"   
+    secrets:
+      - DB_PSWD
+      - SSH_KEY
     volumes:
-      - ./app.py:/app/app.py
-      - ./logs:/app/logs  # Mount logs to /app/logs inside the container
-    restart: always # Restart the container if it crashes (optional)
+      - ./:/app
+    env_file:
+      - .env  # Specify the .env file
+secrets:
+  DB_PSWD:
+    file: ./secrets/DB_PSWD.txt
+  SSH_KEY:
+    file: ./secrets/SSH_KEY.pem

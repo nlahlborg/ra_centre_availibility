@@ -1,19 +1,22 @@
-FROM python:3.11-slim-buster
+FROM public.ecr.aws/lambda/python:3.11
 
-WORKDIR /app
+# Install build dependencies (for compiling packages if needed)
+RUN yum install -y gcc gcc-c++ make python3-devel
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt --no-cache-dir
+# Copy requirements and install dependencies
+COPY requirements.txt ${LAMBDA_TASK_ROOT}
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY src /app/src
-COPY tests /app/tests
-COPY ../.env /.env
-RUN mkdir -p /app/logs
+# Copy application source code
+COPY .env ${LAMBDA_TASK_ROOT}/.env
+COPY src ${LAMBDA_TASK_ROOT}/src
+COPY tests ${LAMBDA_TASK_ROOT}/tests
+COPY main.py ${LAMBDA_TASK_ROOT}/main.py
+COPY lambda_function.py ${LAMBDA_TASK_ROOT}/lambda_function.py
+COPY secrets ${LAMBDA_TASK_ROOT}/secrets
 
-# Install cron
-RUN apt-get update && apt-get install -y cron
+# Remove build dependencies (to reduce image size)
+RUN yum remove -y gcc gcc-c++ make python3-devel && yum clean all
 
-# Create a cron job file
-COPY cronjob /etc/cron.d/
-
-CMD ["cron", "-f"]
+# Set the entrypoint (command to run when the container starts)
+CMD [ "lambda_function.lambda_handler" ]

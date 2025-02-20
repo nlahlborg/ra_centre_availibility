@@ -1,11 +1,10 @@
-import dotenv
 import os
 import pytz
-import mysql.connector
-import paramiko
 from pathlib import Path
+import mysql.connector
 from sshtunnel import SSHTunnelForwarder
 import logging
+import dotenv
 
 logger = logging.getLogger("setup")
 
@@ -35,26 +34,32 @@ def load_env_file(filepath):
     except Exception as e: # Catch any other exceptions
         print(f"An error occurred while loading .env: {e}")
         return False
-    
+       
 def get_mysql_connect_string():
     """
     deprecated
     """
     return f'mysql+mysqlconnector://{os.environ.get("DB_USER")}:{os.environ.get("DB_PSWD")}@{os.environ.get("DB_HOST")}/{os.environ.get("DB_NAME")}'
 
+def get_db_password(fpath):
+    print(f"*******************{fpath}")
+    with open(fpath, 'r') as file:
+        db_password = file.read().strip()
+    return db_password
+
 def db_connect():
     # Configuration
     jump_host = os.environ.get("JUMP_HOST")
     jump_user = os.environ.get("JUMP_USER")
-    jump_ssh_key_path = os.environ.get("SSH_KEY_PATH")
+    jump_ssh_key_path = str(Path(__file__).parent.parent) + os.environ.get("SSH_KEY_PATH")
     rds_host = os.environ.get("DB_HOST")
     rds_port = int(os.environ.get("DB_PORT"))
     rds_user = os.environ.get("DB_USER")
-    rds_password = os.environ.get("DB_PSWD")
+    rds_password = get_db_password(str(Path(__file__).parent.parent) + os.environ.get("DB_PSWD_PATH"))
     rds_db_name = os.environ.get("DB_NAME")
     local_port = int(os.environ.get("LOCAL_PORT"))
-
-
+    
+    server = None
     try:
         server = SSHTunnelForwarder(
             (jump_host, 22),
@@ -79,7 +84,7 @@ def db_connect():
             connection_timeout=10,
             use_pure=True
         )
-        print("Database connection established...")
+
         return server, conn
     except mysql.connector.Error as err:
         logger.error(f"Error connecting to MySQL database: {err}")
