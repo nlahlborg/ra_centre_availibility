@@ -46,9 +46,9 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
             #make the unique slot id
             this_year = datetime.now(tz=pytz.timezone("US/Eastern")).year
             date_str = datetime.strptime(
-                data[0]["name"].split(" - ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
+                item.get("name").split(" - ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
                 ).replace(year=this_year).strftime("%Y%m%d%H%M")
-            slot_id = date_str + "_" + data[0]["facilityName"].lower().replace(" ", "_")
+            slot_id = date_str + "_" + item.get("facilityName").lower().replace(" ", "_")
             
             data_line["slot_id"] = slot_id
             data_list.append(data_line)

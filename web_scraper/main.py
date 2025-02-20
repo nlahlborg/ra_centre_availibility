@@ -33,8 +33,7 @@ def main():
     from src.setup import db_connect, load_env_file
 
     #setup env and connections
-    load_env_file(str(Path(__file__).parent) + "/.env")
-
+    _ = load_env_file(str(Path(__file__).parent) + "/.env")
     server, conn = db_connect()
 
     #scrape data

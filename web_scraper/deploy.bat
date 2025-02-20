@@ -6,8 +6,13 @@ SET REGION="us-west-1"
 docker buildx build --platform linux/amd64 --provenance=false -t docker-image:%IMAGE_NAME% .
 docker tag docker-image:%IMAGE_NAME% %ECR_REPOSITORY_URI%:latest
 
-aws lambda create-function ^
+aws lambda update-function-code ^
   --function-name %IMAGE_NAME% ^
-  --package-type Image ^
-  --code ImageUri=%ECR_REPOSITORY_URI%:latest ^
-  --role arn:aws:iam::%AWS_ACCOUNT_ID%:role/lambda-ex
+  --image-uri %ECR_REPOSITORY_URI%:latest ^
+  --publish
+
+REM aws lambda create-function ^
+REM   --function-name %IMAGE_NAME% ^
+REM   --package-type Image ^
+REM   --code ImageUri=%ECR_REPOSITORY_URI%:latest ^
+REM   --role arn:aws:iam::%AWS_ACCOUNT_ID%:role/lambda-ex
