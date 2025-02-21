@@ -2,7 +2,7 @@
 functions to talk to the RAC website
 """
 
-import requests
+import urllib3
 from datetime import datetime, timedelta
 from typing import List, Optional
 import re
@@ -12,6 +12,7 @@ from math import floor, ceil
 
 logger = logging.getLogger("web_query")
 
+http = urllib3.PoolManager()
 URL = "https://theracentre.my.site.com"
 
 def query(
@@ -19,7 +20,7 @@ def query(
     method: str="GET",
     headers: Optional[dict]=None, 
     payload: Optional[dict]=None
-    ) -> requests.models.Response:
+    ) -> urllib3.response.BaseHTTPResponse:
     """
     Query the RAC website
     """
@@ -27,11 +28,11 @@ def query(
         headers = {"Referer": URL}
 
     if method == "GET":
-        r = requests.get(url, headers=headers)
+        r = http.request("GET", url, headers=headers)
     elif method == "POST":
-        r = requests.post(url, headers=headers, json=payload)
+        r = http.request("POST", url, headers=headers, json=payload)
 
-    return r
+    return r.status, r.data.decode('utf-8')
 
 def get_context_auth(text: str) -> dict | None:
     """
@@ -63,11 +64,11 @@ def construct_payload(
     }
 
     #get the context auth    
-    r = query(url=URL, method="GET")
+    status, response_text = query(url=URL, method="GET")
 
-    if r.status_code:
+    if status == 200:
         action="ts_avo.AvocadoSiteController"
-        context = get_context_auth(r.text)
+        context = get_context_auth(response_text)
         payload["action"] = action
         payload["method"] = context["actions"][action]["ms"][0]["name"]
         payload["ctx"] = {}
@@ -110,11 +111,11 @@ def construct_payload(
 
         return payload
     else:
-        logger.exception(f"Failed to get the context auth with return code {r.status_code}")
+        logger.exception(f"Failed to get the context auth with return code {status}")
         return None
 
 def get_availability(
-    start_date: datetime=datetime.now(), 
+    start_date: datetime=datetime.now().astimezone(), 
     end_date: datetime=datetime.now() + timedelta(days=60), 
     program_codes: List[str]=["PROG-000317","PROG-000003"]
     ) -> dict | None:
@@ -124,17 +125,17 @@ def get_availability(
     payload = construct_payload(start_date, end_date, program_codes)
     service = payload.pop("service")
 
-    r = query(
+    status, response_text = query(
         url=URL+f"/{service}", 
         headers={"Referer": "https://theracentre.my.site.com/"}, 
         method="POST", 
         payload=payload
         )
 
-    if r.status_code == 200:
-        return r.json()
+    if status == 200:
+        return json.loads(response_text)
     else:
-        logger.exception(f"Failed to response payload with return code {r.status_code}")
+        logger.exception(f"Failed to response payload with return code {status}")
         return None
 
 

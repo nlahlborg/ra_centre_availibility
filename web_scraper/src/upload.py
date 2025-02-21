@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import logging
 import mysql.connector 
 
-from src.setup import RA_CENTRE_TZ, ALL_COLS
+from src.setup import RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
 
 DataObject = List[Dict[str, Any]]
 
@@ -14,14 +14,14 @@ def compare_data(data: DataObject, existing_data: DataObject) -> DataObject:
         return data
     else:
         # Create set of existing tuples
-        existing_indexes = set(row["display_name"] for row in existing_data)
-        input_indexes = set(row["display_name"] for row in data)
+        existing_indexes = set(tuple([row[col] for col in primary_key]) for row in existing_data)
+        input_indexes = set(tuple([row[col] for col in primary_key]) for row in data)
 
         new_rows_indexes = list(input_indexes.difference(existing_indexes))
 
         # Find new rows in the original data set
         new_data = []     
-        data_index = [row["display_name"] for row in data]   
+        data_index = [tuple([row[col] for col in primary_key]) for row in data]   
         for idx in new_rows_indexes:
             new_data.append(data[data_index.index(idx)])
 
