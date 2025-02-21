@@ -37,7 +37,8 @@ def main():
     server, conn = db_connect()
 
     #scrape data
-    logger.info("preparing to get availability data")
+    logger.info("preparing to get badminton_court availability data")
+    
     response = get_availability()
     data = response[0]["result"]["data"]
     dict_list = parse_availability_data(data)

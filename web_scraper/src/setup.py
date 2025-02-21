@@ -42,7 +42,6 @@ def get_mysql_connect_string():
     return f'mysql+mysqlconnector://{os.environ.get("DB_USER")}:{os.environ.get("DB_PSWD")}@{os.environ.get("DB_HOST")}/{os.environ.get("DB_NAME")}'
 
 def get_db_password(fpath):
-    print(f"*******************{fpath}")
     with open(fpath, 'r') as file:
         db_password = file.read().strip()
     return db_password

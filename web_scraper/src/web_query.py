@@ -115,7 +115,7 @@ def construct_payload(
         return None
 
 def get_availability(
-    start_date: datetime=datetime.now(), 
+    start_date: datetime=datetime.now().astimezone(), 
     end_date: datetime=datetime.now() + timedelta(days=60), 
     program_codes: List[str]=["PROG-000317","PROG-000003"]
     ) -> dict | None:
