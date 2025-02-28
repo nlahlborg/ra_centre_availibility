@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def lambda_handler(event, context):
+def lambda_handler(event):
     """
     AWS Lambda handler function.
 
@@ -18,7 +18,7 @@ def lambda_handler(event, context):
     logger.info("Received event: %s", json.dumps(event))
     from main import main
     logger.info("preparing to run main")
-    n_rows = main()
+    n_rows = main(write_to_db=event)
 
     # Your logic here
     response = {
