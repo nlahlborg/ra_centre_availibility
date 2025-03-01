@@ -19,11 +19,9 @@ class LocalTZFormatter(logging.Formatter):
 
 formatter = LocalTZFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
-# file_handler.setFormatter(formatter)
 
 # Add the handlers to the logger
 logger.addHandler(console_handler)
-# logger.addHandler(file_handler)
 
 def main(write_to_db=False):
     from src.web_query import get_availability
@@ -36,6 +34,7 @@ def main(write_to_db=False):
     server, conn = db_connect()
 
     #scrape data
+    logger.info(f"received value for write_to_db: {write_to_db}")
     logger.info("preparing to get badminton_court availability data")
     
     response = get_availability()
