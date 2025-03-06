@@ -35,12 +35,6 @@ def load_env_file(filepath):
         print(f"An error occurred while loading .env: {e}")
         return False
        
-def get_mysql_connect_string():
-    """
-    deprecated
-    """
-    return f'mysql+mysqlconnector://{os.environ.get("DB_USER")}:{os.environ.get("DB_PSWD")}@{os.environ.get("DB_HOST")}/{os.environ.get("DB_NAME")}'
-
 def get_db_password(fpath):
     with open(fpath, 'r') as file:
         db_password = file.read().strip()
@@ -48,7 +42,11 @@ def get_db_password(fpath):
 
 def db_connect():
     # Configuration
-    jump_host = os.environ.get("JUMP_HOST")
+    if os.environ.get("ENV", "local") == "local":
+        jump_host = os.environ.get("JUMP_HOST_LOCAL")
+    else:
+        jump_host = os.environ.get("JUMP_HOST_PROD")
+
     jump_user = os.environ.get("JUMP_USER")
     jump_ssh_key_path = str(Path(__file__).parent.parent) + os.environ.get("SSH_KEY_PATH")
     rds_host = os.environ.get("DB_HOST")

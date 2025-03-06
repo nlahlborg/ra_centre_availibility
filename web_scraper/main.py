@@ -3,7 +3,6 @@ from datetime import datetime, UTC
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 
@@ -20,13 +19,11 @@ class LocalTZFormatter(logging.Formatter):
 
 formatter = LocalTZFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
-# file_handler.setFormatter(formatter)
 
 # Add the handlers to the logger
 logger.addHandler(console_handler)
-# logger.addHandler(file_handler)
 
-def main():
+def main(write_to_db=False):
     from src.web_query import get_availability
     from src.parser import parse_availability_data
     from src.upload import get_only_new_data, prepare_transaction, save_data
@@ -37,6 +34,7 @@ def main():
     server, conn = db_connect()
 
     #scrape data
+    logger.info(f"received value for write_to_db: {write_to_db}")
     logger.info("preparing to get badminton_court availability data")
     
     response = get_availability()
@@ -50,10 +48,13 @@ def main():
         n_rows = len(data_new)
         logger.info(f"Number of new rows for mysql: {n_rows}")
 
-        if n_rows > 0:
+        if n_rows > 0 and write_to_db:
             logger.info("saving data to the mysql database")
             sql = prepare_transaction(data_new)
             save_data(sql, conn)
+        elif not write_to_db:
+            logger.info(f"did not write data because write_to_db = {write_to_db}")
+            n_rows = 0
         else:
             logger.info("no new data to save for mysql")
 

@@ -15,17 +15,18 @@ def lambda_handler(event, context):
     Returns:
         dict: The response object.
     """
-    logger.info("Received event: %s", json.dumps(event))
+    _, write_to_db = next(iter(event.items())) 
+    logger.info(f"Received event: {event}")
     from main import main
     logger.info("preparing to run main")
-    n_rows = main()
+    n_rows = main(write_to_db=write_to_db)
 
     # Your logic here
     response = {
         "statusCode": 200,
         "body": json.dumps({
             "message": f"Wrote {n_rows} to DB",
-            "input": event
+            "input": f"{event}"
         })
     }
 
