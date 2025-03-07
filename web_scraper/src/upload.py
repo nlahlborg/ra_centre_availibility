@@ -31,7 +31,7 @@ def get_existing_data(min_start_datetime: str, conn: mysql.connector.connection.
     # construct the query
     query = f"""
         SELECT {', '.join([col for col in ALL_COLS])}
-        FROM badminton_courts
+        FROM sports_facilities
         WHERE start_datetime >= \"{min_start_datetime}\"
         LIMIT 1000
         """
@@ -56,7 +56,7 @@ def get_only_new_data(data: DataObject, conn: mysql.connector.connection.MySQLCo
 
     return new_data
     
-def prepare_transaction(data: DataObject, table_name: str="badminton_courts") -> str:
+def prepare_transaction(data: DataObject, table_name: str="sports_facilities") -> str:
     """
     Prepare the mysql transaction string for the database.
     """

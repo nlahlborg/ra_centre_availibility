@@ -14,6 +14,15 @@ logger = logging.getLogger("web_query")
 
 http = urllib3.PoolManager()
 URL = "https://theracentre.my.site.com"
+PROGRAM_CODES = [
+    "PROG-000317", "PROG-000003", #badminton
+    "PROG-000110", "PROG-000074", #pickleball
+    "PROG-000071", #squash
+    "PROG-000072", #raquetball
+    "PROG-000415", #curling
+    "PROG-000005", #archery
+    "PROG-000090" #photo studio
+    ]
 
 def query(
     url: str=URL, 
@@ -117,7 +126,7 @@ def construct_payload(
 def get_availability(
     start_date: datetime=datetime.now().astimezone(), 
     end_date: datetime=datetime.now() + timedelta(days=60), 
-    program_codes: List[str]=["PROG-000317","PROG-000003"]
+    program_codes: List[str]=PROGRAM_CODES
     ) -> dict | None:
     """
     gets the availability of the programs
