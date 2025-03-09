@@ -2,6 +2,7 @@ from datetime import datetime
 import pytz
 from typing import List, Dict, Any
 import logging
+import re
 
 from src.setup import DB_TZ
 
@@ -46,11 +47,16 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
             #make the unique slot id
             this_year = datetime.now(tz=pytz.timezone("US/Eastern")).year
             date_str = datetime.strptime(
-                item.get("name").split(" - ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
+                item.get("name").split("- ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
                 ).replace(year=this_year).strftime("%Y%m%d%H%M")
             slot_id = date_str + "_" + item.get("facilityName").lower().replace(" ", "_")
             
             data_line["slot_id"] = slot_id
+
+            #get the facility type
+            facility_type = "".join(re.findall("[a-z -]*", item.get("facilityName").lower())).strip()
+            data_line["facility_type"] = facility_type
+
             data_list.append(data_line)
 
         except (ValueError, TypeError) as e:

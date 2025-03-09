@@ -9,6 +9,7 @@ import dotenv
 logger = logging.getLogger("setup")
 
 DB_TZ = pytz.UTC
+TABLE_NAME = "sports_facilities"
 RA_CENTRE_TZ = pytz.timezone('US/Eastern') # timestamps from RA center website are in eastern time
 INDEX1 = ["slot_id", "inserted_datetime"] #primary key
 INDEX2 = ["slot_id", "num_people"] #alternate key
@@ -42,11 +43,7 @@ def get_db_password(fpath):
 
 def db_connect():
     # Configuration
-    if os.environ.get("ENV", "local") == "local":
-        jump_host = os.environ.get("JUMP_HOST_LOCAL")
-    else:
-        jump_host = os.environ.get("JUMP_HOST_PROD")
-
+    jump_host = os.environ.get("JUMP_HOST")
     jump_user = os.environ.get("JUMP_USER")
     jump_ssh_key_path = str(Path(__file__).parent.parent) + os.environ.get("SSH_KEY_PATH")
     rds_host = os.environ.get("DB_HOST")

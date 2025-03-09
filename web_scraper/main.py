@@ -35,11 +35,12 @@ def main(write_to_db=False):
 
     #scrape data
     logger.info(f"received value for write_to_db: {write_to_db}")
-    logger.info("preparing to get badminton_court availability data")
+    logger.info("preparing to get courts availability data")
     
     response = get_availability()
     data = response[0]["result"]["data"]
     dict_list = parse_availability_data(data)
+    
     logger.info(f"received {len(dict_list)} items from ra centre site")
 
     #save to mysql
