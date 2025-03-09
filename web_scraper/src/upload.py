@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import logging
 import mysql.connector 
 
-from src.setup import RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
+from src.setup import TABLE_NAME, RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
 
 DataObject = List[Dict[str, Any]]
 
@@ -27,7 +27,9 @@ def compare_data(data: DataObject, existing_data: DataObject) -> DataObject:
 
         return new_data
 
-def get_existing_data(min_start_datetime: str, conn: mysql.connector.connection.MySQLConnection) -> DataObject:
+def get_existing_data(min_start_datetime: str, 
+    conn: mysql.connector.connection.MySQLConnection,
+    table_name: str=TABLE_NAME) -> DataObject:
     # construct the query
     query = f"""
         SELECT {', '.join([col for col in ALL_COLS])}
@@ -44,19 +46,21 @@ def get_existing_data(min_start_datetime: str, conn: mysql.connector.connection.
 
     return existing_data
 
-def get_only_new_data(data: DataObject, conn: mysql.connector.connection.MySQLConnection) -> DataObject:
+def get_only_new_data(data: DataObject, 
+    conn: mysql.connector.connection.MySQLConnection,
+    table_name=TABLE_NAME) -> DataObject:
     """
     Compare the new data with the existing data in the database.
     """
     min_start_datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone(RA_CENTRE_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    existing_data = get_existing_data(min_start_datetime, conn)
+    existing_data = get_existing_data(min_start_datetime, conn, table_name)
 
     # Check if the new data is already in the database
     new_data = compare_data(data, existing_data)
 
     return new_data
     
-def prepare_transaction(data: DataObject, table_name: str="sports_facilities") -> str:
+def prepare_transaction(data: DataObject, table_name: str=TABLE_NAME) -> str:
     """
     Prepare the mysql transaction string for the database.
     """

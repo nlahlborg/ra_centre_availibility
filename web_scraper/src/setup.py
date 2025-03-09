@@ -9,6 +9,7 @@ import dotenv
 logger = logging.getLogger("setup")
 
 DB_TZ = pytz.UTC
+TABLE_NAME = "sports_facilities"
 RA_CENTRE_TZ = pytz.timezone('US/Eastern') # timestamps from RA center website are in eastern time
 INDEX1 = ["slot_id", "inserted_datetime"] #primary key
 INDEX2 = ["slot_id", "num_people"] #alternate key
