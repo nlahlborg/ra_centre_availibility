@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def lambda_handler(event, context):
+def handler(event, context):
     """
     AWS Lambda handler function.
 
