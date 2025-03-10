@@ -1,6 +1,6 @@
-name: Pylint
+name: Run python linting checks
 
-on: [push]
+on: [push, pull-request]
 
 jobs:
   build:
