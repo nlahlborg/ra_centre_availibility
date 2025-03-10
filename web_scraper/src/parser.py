@@ -10,6 +10,22 @@ DataObject = List[Dict[str, Any]]
 
 logger = logging.getLogger("data_parser")
 
+def get_slot_id(item: dict) -> str:
+    #make the unique slot id
+    this_year = datetime.now(tz=pytz.timezone("US/Eastern")).year
+    date_str = datetime.strptime(
+        item.get("name").split("- ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
+        ).replace(year=this_year).strftime("%Y%m%d%H%M")
+    slot_id = date_str + "_" + item.get("facilityName").lower().replace(" ", "_")
+
+    return slot_id
+
+def get_facility_type(item: dict) -> str:    
+    #get the facility type
+    facility_type = "".join(re.findall("[a-z -]*", item.get("facilityName").lower())).strip()
+
+    return facility_type
+
 def parse_availability_data(data: DataObject) -> DataObject | None:
     """
     Parses availability data from a json_object and returns a Pandas DataFrame.
@@ -35,7 +51,6 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
 
             data_line = {
                 "display_name": item.get("name"),
-                "code": item.get("code"),
                 "facility_name": item.get("facilityName"),
                 "start_datetime": start_datetime,
                 "end_datetime": end_datetime,
@@ -44,18 +59,8 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
                 "inserted_datetime": datetime.now().astimezone(DB_TZ)
             }
 
-            #make the unique slot id
-            this_year = datetime.now(tz=pytz.timezone("US/Eastern")).year
-            date_str = datetime.strptime(
-                item.get("name").split("- ", maxsplit=1)[-1], r"%A %b %d - %I:%M %p"
-                ).replace(year=this_year).strftime("%Y%m%d%H%M")
-            slot_id = date_str + "_" + item.get("facilityName").lower().replace(" ", "_")
-            
-            data_line["slot_id"] = slot_id
-
-            #get the facility type
-            facility_type = "".join(re.findall("[a-z -]*", item.get("facilityName").lower())).strip()
-            data_line["facility_type"] = facility_type
+            data_line["slot_id"] = get_slot_id(item)
+            data_line["facility_type"] = get_facility_type(item)
 
             data_list.append(data_line)
 
