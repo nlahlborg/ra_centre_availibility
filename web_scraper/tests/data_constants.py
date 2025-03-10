@@ -1,3 +1,7 @@
+"""
+constants to use in tests
+"""
+# pylint: disable=line-too-long
 import datetime
 from pytz import UTC
 
@@ -64,49 +68,49 @@ RESPONSE_DATA_SAMPLE = [
             "Fri"
         ]
     },
-    {'ageMaxInYears': 130, 
-     'ageMinInYears': 12, 
-     'barcode': '414373', 
-     'code': 'INST-414373', 
-     'divisionCode': 'DIV-002', 
-     'endDate': 1741910400000, 
-     'facilityName': 'Squash Court 5', 
-     'hasRegEarlyStarted': True, 
-     'hasRegEnded': False, 
-     'hasRegPriorityStarted': True, 
-     'hasRegReturnStarted': True, 
-     'hasRegStarted': True, 
-     'instanceType': 'Requires_Registration', 
-     'isLite': True, 
-     'isPackage': False, 
-     'locationCode': 'LOC-000002', 
-     'locationName': 'The RA Centre', 
-     'makeupClassesEnabled': False, 
+    {'ageMaxInYears': 130,
+     'ageMinInYears': 12,
+     'barcode': '414373',
+     'code': 'INST-414373',
+     'divisionCode': 'DIV-002',
+     'endDate': 1741910400000,
+     'facilityName': 'Squash Court 5',
+     'hasRegEarlyStarted': True,
+     'hasRegEnded': False,
+     'hasRegPriorityStarted': True,
+     'hasRegReturnStarted': True,
+     'hasRegStarted': True,
+     'instanceType': 'Requires_Registration',
+     'isLite': True,
+     'isPackage': False,
+     'locationCode': 'LOC-000002',
+     'locationName': 'The RA Centre',
+     'makeupClassesEnabled': False,
      'marketingDescription': 'One-hour court rentals are available for all Non-RA and RA Members.', 
-     'maxAge': 130, 
-     'maxPeople': 1, 
-     'minAge': 12, 
-     'name': 'Squash Court 5 - Friday  Mar 14 - 1:30 PM', 
-     'numPeople': 0, 
-     'numWaitlist': 0, 
-     'programCode': 'PROG-000071', 
-     'regCancel': 1741800600000, 
-     'regEarly': 1741356000000, 
-     'regEnd': 1741975200000, 
-     'regPriority': 1741356000000, 
-     'regReturn': 1741356000000, 
-     'regStart': 1741356000000, 
+     'maxAge': 130,
+     'maxPeople': 1,
+     'minAge': 12,
+     'name': 'Squash Court 5 - Friday  Mar 14 - 1:30 PM',
+     'numPeople': 0,
+     'numWaitlist': 0,
+     'programCode': 'PROG-000071',
+     'regCancel': 1741800600000,
+     'regEarly': 1741356000000,
+     'regEnd': 1741975200000,
+     'regPriority': 1741356000000,
+     'regReturn': 1741356000000,
+     'regStart': 1741356000000,
      'schedule': [
          {
-             'description': '', 
-             'endDatetime': 1741977000000, 
-             'isRecurrence': False, 
-             'startDatetime': 1741973400000, 
+             'description': '',
+             'endDatetime': 1741977000000,
+             'isRecurrence': False,
+             'startDatetime': 1741973400000,
              'subject': 'Squash Court 5 - Friday  Mar 14 - 1:30 PM'
              }
-             ], 
-    'startDate': 1741973400000, 
-    'tracksAttendance': False, 
+             ],
+    'startDate': 1741973400000,
+    'tracksAttendance': False,
     'weekDays': [
         'Fri'
         ]
@@ -185,4 +189,3 @@ CHANGED_DB_DATA = [
         'inserted_datetime': datetime.datetime(2025, 2, 17, 20, 4, 8, 676798, tzinfo=UTC)
     }
 ]
-

@@ -7,19 +7,6 @@ database. The main function orchestrates the entire process, including setting
 up the environment, establishing database connections, scraping data, and
 saving new data to the database.
 
-Functions:
-    main(write_to_db=False): The main function that runs the web scraping and
-                             data saving process.
-
-Classes:
-    LocalTZFormatter: A custom logging formatter that converts timestamps to
-                      the local timezone.
-
-Usage:
-    Run this module as a script to execute the web scraping and data saving
-    process. Use the `write_to_db` argument to control whether the scraped data
-    should be saved to the MySQL database.
-
 Example:
     python main.py
 """
@@ -31,7 +18,7 @@ import logging
 from src.web_query import get_availability
 from src.parser import parse_availability_data
 from src.upload import get_only_new_data, prepare_transaction, save_data
-from src.setup import DB_TZ, db_connect, load_env_file
+from src.setup import LOCAL_TZ, db_connect, load_env_file
 
 # Configure logging
 logger = logging.getLogger("main")
@@ -50,7 +37,7 @@ class LocalTZFormatter(logging.Formatter):
         """
         convert timestamp to desired locale
         """
-        db_dt = datetime.fromtimestamp(timestamp, DB_TZ)
+        db_dt = datetime.fromtimestamp(timestamp, LOCAL_TZ)
         pst_dt = db_dt.astimezone()
         return pst_dt.timetuple()
 
