@@ -23,6 +23,7 @@ jobs:
       - name: Install Web Scraper dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install pylint
           pip install -r web_scraper/requirements.txt # Install from web_scraper
       - name: Analysing the Web Scraper code with pylint
         run: |
