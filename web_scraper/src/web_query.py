@@ -1,20 +1,25 @@
 """
-functions to talk to the RAC website
+web_scraper.src.web_query
+
+This module provides functions to interact with the RA Centre website. It includes
+functions to query the website, extract context authentication information, construct
+payloads for POST requests, and retrieve availability data for various programs.
 """
 
-import urllib3
-from datetime import datetime, timedelta
-from typing import List, Optional
 import re
 import json
-import logging
 from math import floor, ceil
+from datetime import datetime, timedelta
+from typing import List, Tuple, Optional
+import logging
+
+import urllib3
 
 logger = logging.getLogger("web_query")
 
 http = urllib3.PoolManager()
 URL = "https://theracentre.my.site.com"
-PROGRAM_CODES = [
+PROGRAM_CODES = (
     "PROG-000317", "PROG-000003", #badminton
     "PROG-000110", "PROG-000074", #pickleball
     "PROG-000071", #squash
@@ -22,12 +27,12 @@ PROGRAM_CODES = [
     "PROG-000415", #curling
     "PROG-000005", #archery
     "PROG-000090" #photo studio
-    ]
+)
 
 def query(
-    url: str=URL, 
+    url: str=URL,
     method: str="GET",
-    headers: Optional[dict]=None, 
+    headers: Optional[dict]=None,
     payload: Optional[dict]=None
     ) -> urllib3.response.BaseHTTPResponse:
     """
@@ -38,10 +43,14 @@ def query(
 
     if method == "GET":
         r = http.request("GET", url, headers=headers)
-    elif method == "POST":
-        r = http.request("POST", url, headers=headers, json=payload)
+        return r.status, r.data.decode('utf-8')
 
-    return r.status, r.data.decode('utf-8')
+    if method == "POST":
+        r = http.request("POST", url, headers=headers, json=payload)
+        return r.status, r.data.decode('utf-8')
+
+    return None
+
 
 def get_context_auth(text: str) -> dict | None:
     """
@@ -53,14 +62,14 @@ def get_context_auth(text: str) -> dict | None:
 
     try:
         json_obj = json.loads(json_string)
-        return json_obj  
+        return json_obj
     except json.JSONDecodeError:
         logger.exception("Failed to decode the context auth json")
         return None
 
 def construct_payload(
-    start_date: datetime, 
-    end_date: datetime, 
+    start_date: datetime,
+    end_date: datetime,
     program_codes: List[str]
     ) -> dict | None:
     """
@@ -72,7 +81,7 @@ def construct_payload(
         "tid": 11,
     }
 
-    #get the context auth    
+    #get the context auth
     status, response_text = query(url=URL, method="GET")
 
     if status == 200:
@@ -119,14 +128,13 @@ def construct_payload(
         payload["data"] = data
 
         return payload
-    else:
-        logger.exception(f"Failed to get the context auth with return code {status}")
-        return None
+
+    return None
 
 def get_availability(
-    start_date: datetime=datetime.now().astimezone(), 
-    end_date: datetime=datetime.now() + timedelta(days=60), 
-    program_codes: List[str]=PROGRAM_CODES
+    start_date: datetime=datetime.now().astimezone(),
+    end_date: datetime=datetime.now() + timedelta(days=60),
+    program_codes: Tuple[str]=PROGRAM_CODES
     ) -> dict | None:
     """
     gets the availability of the programs
@@ -135,17 +143,16 @@ def get_availability(
     service = payload.pop("service")
 
     status, response_text = query(
-        url=URL+f"/{service}", 
-        headers={"Referer": "https://theracentre.my.site.com/"}, 
-        method="POST", 
+        url=URL+f"/{service}",
+        headers={"Referer": "https://theracentre.my.site.com/"},
+        method="POST",
         payload=payload
         )
 
     if status == 200:
         return json.loads(response_text)
-    else:
+
+    if status != 200:
         logger.exception(f"Failed to response payload with return code {status}")
-        return None
 
-
-
+    return None

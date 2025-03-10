@@ -1,43 +1,60 @@
+"""
+web_scraper.src.upload
+
+This module provides functions to handle the uploading of scraped data to a MySQL database.
+It includes functions to compare new data with existing data, prepare SQL transactions,
+and save data to the database.
+"""
 from datetime import datetime
 from typing import List, Dict, Any
 import logging
-import mysql.connector 
+import mysql.connector
 
 from src.setup import TABLE_NAME, RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
-MIN_START_DATETIME = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone(RA_CENTRE_TZ).strftime("%Y-%m-%d %H:%M:%S")
+MIN_START_DATETIME = datetime.now().replace(
+    hour=0,
+    minute=0,
+    second=0,
+    microsecond=0).astimezone(RA_CENTRE_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 DataObject = List[Dict[str, Any]]
 
 logger = logging.getLogger("data_parser")
 
 def compare_data(data: DataObject, existing_data: DataObject) -> DataObject:
+    """
+    return only new data that's not already in the db
+    """
     if not existing_data:
         return data
-    else:
-        # Create set of existing tuples
-        existing_indexes = set(tuple([row[col] for col in primary_key]) for row in existing_data)
-        input_indexes = set(tuple([row[col] for col in primary_key]) for row in data)
 
-        new_rows_indexes = list(input_indexes.difference(existing_indexes))
+    # Create set of existing tuples
+    existing_indexes = set(tuple(row[col] for col in primary_key) for row in existing_data)
+    input_indexes = set(tuple(row[col] for col in primary_key) for row in data)
 
-        # Find new rows in the original data set
-        new_data = []     
-        data_index = [tuple([row[col] for col in primary_key]) for row in data]   
-        for idx in new_rows_indexes:
-            new_data.append(data[data_index.index(idx)])
+    new_rows_indexes = list(input_indexes.difference(existing_indexes))
 
-        return new_data
+    # Find new rows in the original data set
+    new_data = []
+    data_index = [tuple(row[col] for col in primary_key) for row in data]
+    for idx in new_rows_indexes:
+        new_data.append(data[data_index.index(idx)])
 
-def get_existing_data(min_start_datetime: str, 
+    return new_data
+
+def get_existing_data(min_start_datetime: str,
     conn: mysql.connector.connection.MySQLConnection,
     table_name: str=TABLE_NAME) -> DataObject:
+    """
+    query the database for existing data
+    """
     # construct the query
     query = f"""
-        SELECT {', '.join([col for col in ALL_COLS])}
+        SELECT {', '.join(ALL_COLS)}
         FROM {table_name}
         WHERE start_datetime >= \"{min_start_datetime}\"
         """
-    
+
     #read from db
     cursor = conn.cursor(dictionary=True)
     cursor.execute(query)
@@ -45,7 +62,7 @@ def get_existing_data(min_start_datetime: str,
     cursor.close()
     return existing_data
 
-def get_only_new_data(data: DataObject, 
+def get_only_new_data(data: DataObject,
     conn: mysql.connector.connection.MySQLConnection,
     table_name=TABLE_NAME) -> DataObject:
     """
@@ -57,14 +74,14 @@ def get_only_new_data(data: DataObject,
     new_data = compare_data(data, existing_data)
 
     return new_data
-    
+
 def prepare_transaction(data: DataObject, table_name: str=TABLE_NAME) -> str:
     """
     Prepare the mysql transaction string for the database.
     """
     if not data:
         return ""
-    
+
     columns = ALL_COLS
     values = []
     for row in data:
@@ -85,10 +102,9 @@ def prepare_transaction(data: DataObject, table_name: str=TABLE_NAME) -> str:
     values_str = ", ".join(values)
     sql = f"INSERT INTO {table_name} ({columns_str}) VALUES {values_str};"
     return sql
-    
+
 def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
     """
-    depricated
     Save the data to the sqlite database.
     """
     try:
