@@ -13,7 +13,7 @@ TABLE_NAME = "sports_facilities"
 RA_CENTRE_TZ = pytz.timezone('US/Eastern') # timestamps from RA center website are in eastern time
 INDEX1 = ["slot_id", "inserted_datetime"] #primary key
 INDEX2 = ["slot_id", "num_people"] #alternate key
-ALL_COLS = ["slot_id", "display_name", "code", "facility_name", "start_datetime", "end_datetime", "num_people", "has_reg_ended", "inserted_datetime"]
+ALL_COLS = ["slot_id", "display_name", "code", "facility_name", "facility_type", "start_datetime", "end_datetime", "num_people", "has_reg_ended", "inserted_datetime"]
 
 def load_env_file(filepath):
     """Loads environment variables from a .env file.
@@ -27,13 +27,13 @@ def load_env_file(filepath):
     """
     try:
         dotenv.load_dotenv(dotenv_path=filepath, verbose=True, override=False) # override=False to not overwrite existing env vars
-        print(f"Successfully loaded environment variables from {filepath}")
+        logger.info(f"Successfully loaded environment variables from {filepath}")
         return True
     except FileNotFoundError:
-        print(f"Error: .env file not found at {filepath}")
+        logger.error(f"Error: .env file not found at {filepath}")
         return False
     except Exception as e: # Catch any other exceptions
-        print(f"An error occurred while loading .env: {e}")
+        logger.exception(f"An error occurred while loading .env: {e}")
         return False
        
 def get_db_password(fpath):

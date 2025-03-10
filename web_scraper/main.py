@@ -64,7 +64,7 @@ def main(write_to_db=False):
         conn.close()
         server.stop()
 
-        return n_rows
+        return data_new
     
     except Exception as e:
         conn.close()
@@ -72,4 +72,4 @@ def main(write_to_db=False):
         raise(e)
     
 if __name__ == "__main__":
-    _ = main()
+    data_new = main()

@@ -4,6 +4,7 @@ import logging
 import mysql.connector 
 
 from src.setup import TABLE_NAME, RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
+MIN_START_DATETIME = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone(RA_CENTRE_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 DataObject = List[Dict[str, Any]]
 
@@ -33,9 +34,8 @@ def get_existing_data(min_start_datetime: str,
     # construct the query
     query = f"""
         SELECT {', '.join([col for col in ALL_COLS])}
-        FROM sports_facilities
+        FROM {table_name}
         WHERE start_datetime >= \"{min_start_datetime}\"
-        LIMIT 1000
         """
     
     #read from db
@@ -43,7 +43,6 @@ def get_existing_data(min_start_datetime: str,
     cursor.execute(query)
     existing_data = cursor.fetchall()
     cursor.close()
-
     return existing_data
 
 def get_only_new_data(data: DataObject, 
@@ -52,8 +51,7 @@ def get_only_new_data(data: DataObject,
     """
     Compare the new data with the existing data in the database.
     """
-    min_start_datetime = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).astimezone(RA_CENTRE_TZ).strftime("%Y-%m-%d %H:%M:%S")
-    existing_data = get_existing_data(min_start_datetime, conn, table_name)
+    existing_data = get_existing_data(MIN_START_DATETIME, conn, table_name)
 
     # Check if the new data is already in the database
     new_data = compare_data(data, existing_data)
