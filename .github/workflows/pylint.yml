@@ -1,9 +1,6 @@
 name: web_scraper project Linting Checks
 
 on:
-  push:
-    paths:
-      - '**'
   pull_request:
     paths:
       - '**'
