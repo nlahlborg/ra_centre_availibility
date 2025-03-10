@@ -1,6 +1,6 @@
 name: Run python linting checks
 
-on: [push, pull-request]
+on: [push]
 
 jobs:
   build:
