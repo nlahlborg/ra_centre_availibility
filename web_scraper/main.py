@@ -1,5 +1,7 @@
 from pathlib import Path
-from datetime import datetime, UTC
+from datetime import datetime
+from src.setup import DB_TZ
+
 import logging
 
 # Configure logging
@@ -13,8 +15,8 @@ console_handler.setLevel(logging.INFO)
 # Create a custom formatter
 class LocalTZFormatter(logging.Formatter):
     def converter(self, timestamp):
-        utc_dt = datetime.fromtimestamp(timestamp, UTC)
-        pst_dt = utc_dt.astimezone()
+        db_dt = datetime.fromtimestamp(timestamp, DB_TZ)
+        pst_dt = db_dt.astimezone()
         return pst_dt.timetuple() 
 
 formatter = LocalTZFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
