@@ -51,7 +51,6 @@ def parse_availability_data(data: DataObject) -> DataObject | None:
 
             data_line = {
                 "display_name": item.get("name"),
-                "code": item.get("code"),
                 "facility_name": item.get("facilityName"),
                 "start_datetime": start_datetime,
                 "end_datetime": end_datetime,

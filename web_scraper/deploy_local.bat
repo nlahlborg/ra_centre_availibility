@@ -13,6 +13,7 @@ REM start container
 docker run --platform linux/amd64 -d -v "%USERPROFILE%\.aws-lambda-rie:/aws-lambda" -p 9000:8080 ^
     --entrypoint /aws-lambda/aws-lambda-rie ^
     --name %IMAGE_NAME%_local_test^
+    --stop-timeout 60 ^
     docker-image:"%IMAGE_NAME%_test" ^
     /usr/local/bin/python -m awslambdaric lambda_function.handler
 powershell -command "Invoke-WebRequest -Uri 'http://localhost:9000/2015-03-31/functions/function/invocations' -Method Post -Body '{\"write_to_db\": 0}' -ContentType 'application/json'"
