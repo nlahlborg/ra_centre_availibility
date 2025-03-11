@@ -1,4 +1,5 @@
-name: web_scraper project Linting Checks
+name: web_scraper project python unit tests
+
 
 on:
   pull_request:
@@ -8,24 +9,22 @@ on:
       - main  # Change this to match your default branch
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.11
         uses: actions/setup-python@v3
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.11
       - name: Install dependencies
         run: |
           cd web_scraper
           python -m pip install --upgrade pip
-          pip install pylint
+          pip install pytest
           pip install -r requirements.txt
-      - name: Analysing the Web Scraper code with pylint
-        run: |
+
+      - name: Run Pytest
+        run: | 
           cd web_scraper
-          pylint $(git ls-files '*.py')
+          pytest --disable-warnings --maxfail 5
