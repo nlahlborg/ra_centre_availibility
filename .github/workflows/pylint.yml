@@ -21,9 +21,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Web Scraper dependencies
         run: |
+          cd web_scraper
           python -m pip install --upgrade pip
           pip install pylint
-          pip install -r web_scraper/requirements.txt
+          pip install -r requirements.txt
       - name: Analysing the Web Scraper code with pylint
         run: |
           cd web_scraper
