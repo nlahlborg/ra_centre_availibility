@@ -11,6 +11,6 @@ docker push %ECR_REPOSITORY_URI_DEV%:latest
 aws lambda update-function-code ^
   --function-name %IMAGE_NAME%_dev ^
   --image-uri %ECR_REPOSITORY_URI_DEV%:latest ^
-  --publish
+  --publish > lambda_output.txt
 
 REM aws lambda create-function --function-name %IMAGE_NAME%_dev --package-type Image --code ImageUri=%ECR_REPOSITORY_URI_DEV%:latest --role arn:aws:iam::%AWS_ACCOUNT_ID%:role/lambda-ex
