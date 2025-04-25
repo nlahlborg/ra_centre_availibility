@@ -8,7 +8,6 @@ and establish SSH tunnels and MySQL database connections.
 
 import os
 from io import StringIO
-from pathlib import Path
 import logging
 
 import pytz
