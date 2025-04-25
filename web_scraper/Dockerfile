@@ -24,7 +24,7 @@ COPY src ${FUNCTION_DIR}/src
 COPY main.py ${FUNCTION_DIR}/main.py
 COPY lambda_function.py ${FUNCTION_DIR}/lambda_function.py
 COPY secrets ${FUNCTION_DIR}/secrets
-COPY .env ${FUNCTION_DIR}/.env
+COPY ./.env ${FUNCTION_DIR}/.env
 
 # Multi-stage build with distroless for even smaller image
 FROM python:3.11-slim-bookworm

@@ -7,11 +7,12 @@ and establish SSH tunnels and MySQL database connections.
 """
 
 import os
-from pathlib import Path
+from io import StringIO
 import logging
 
 import pytz
 import mysql.connector
+import paramiko
 from sshtunnel import SSHTunnelForwarder
 import dotenv
 
@@ -70,14 +71,16 @@ def db_connect():
         server: ssh server connection object
         conn: mysql db connection object
     """
+    ssh_key = os.environ.get("JUMP_HOST_SSH_KEY")
+    shh_key = ssh_key.replace(r"\n", "\n")
+    pkey = paramiko.Ed25519Key.from_private_key(StringIO(shh_key))
+
     jump_host = os.environ.get("JUMP_HOST")
     jump_user = os.environ.get("JUMP_USER")
-    jump_ssh_key_path = str(Path(__file__).parent.parent) + os.environ.get("SSH_KEY_PATH")
     rds_host = os.environ.get("DB_HOST")
     rds_port = int(os.environ.get("DB_PORT"))
     rds_user = os.environ.get("DB_USER")
-    rds_password = get_db_password(str(Path(__file__).parent.parent) \
-        + os.environ.get("DB_PSWD_PATH"))
+    rds_password = os.environ.get("DB_PSWD")
     rds_db_name = os.environ.get("DB_NAME")
     local_port = int(os.environ.get("LOCAL_PORT"))
 
@@ -86,7 +89,7 @@ def db_connect():
         server = SSHTunnelForwarder(
             (jump_host, 22),
             ssh_username=jump_user,
-            ssh_private_key=jump_ssh_key_path,
+            ssh_pkey=pkey,
             remote_bind_address=(rds_host, rds_port),
             local_bind_address=('127.0.0.1', local_port),
             set_keepalive=30
