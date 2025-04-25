@@ -1,7 +1,7 @@
 # Define custom function directory
 ARG FUNCTION_DIR="/function"
 
-FROM python:3.11-slim-bookworm AS build-image
+FROM python:3.13-slim-bookworm AS build-image
 
 # Include global arg in this stage of the build
 ARG FUNCTION_DIR
@@ -27,7 +27,7 @@ COPY secrets ${FUNCTION_DIR}/secrets
 COPY ./.env ${FUNCTION_DIR}/.env
 
 # Multi-stage build with distroless for even smaller image
-FROM python:3.11-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 # Include global arg in this stage of the build
 ARG FUNCTION_DIR
