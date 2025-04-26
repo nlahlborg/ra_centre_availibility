@@ -5,7 +5,6 @@ This module provides functions to handle the uploading of scraped data to a MySQ
 It includes functions to compare new data with existing data, prepare SQL transactions,
 and save data to the database.
 """
-import os
 from datetime import datetime
 from typing import List, Dict, Any
 import json
@@ -122,30 +121,29 @@ def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
 
 def upload_to_s3(data: dict, bucket_name: str, object_name: str, region_name: str='us-west-1') -> str:
     """
-    Save the data aws s3
+    Save the raw data aws s3
     """
     s3_client = boto3.client('s3', region_name=region_name)
-    json_string = json.dumps(data)
 
     try:
         # Upload the JSON string as an object to S3.
         response = s3_client.put_object(
             Bucket=bucket_name,
             Key=object_name,
-            Body=json_string,
-            ContentType='application/json',  # Set the content type to application/json
+            Body=json.dumps(data),
+            ContentType='application/json',
             IfNoneMatch='*'
         )
 
-        # Check the response for success.  A successful upload will usually return a 200 status code.
+        # Check the response for success. 
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
             return True, None
         else:
             return False, f"Upload failed with status code: {response['ResponseMetadata']['HTTPStatusCode']}"
 
     except ClientError as e:
-        # Handle S3 errors (e.g., bucket not found, access denied).
+        # Handle S3 errors
         return False, f"Error uploading to S3: {e}"
     except Exception as e:
-        # Handle other errors (e.g., JSON serialization issues).
+        # Handle other errors
         return False, f"An unexpected error occurred: {e}"

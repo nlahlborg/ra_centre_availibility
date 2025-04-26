@@ -55,14 +55,6 @@ def load_env_file(filepath):
         logger.error(f"Error: .env file not found at {filepath}")
         return False
 
-def get_db_password(fpath):
-    """
-    read the db_password
-    """
-    with open(fpath, 'r', encoding="UTF-8") as file:
-        db_password = file.read().strip()
-    return db_password
-
 def db_connect():
     """
     configure database connection
@@ -121,3 +113,10 @@ def db_connect():
         if server:
             server.stop()
         return None
+
+def get_s3_bucket():
+    my_env = os.environ.get("ENV", "dev")
+    if my_env == "prod":
+        return "ra-center-raw-data-prod"
+    else:
+        return "ra-center-raw-data-dev"

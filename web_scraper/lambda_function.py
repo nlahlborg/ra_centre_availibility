@@ -44,13 +44,13 @@ def handler(event, context):
     logger.info(f"Received event: {event}")
     from main import main
     logger.info("preparing to run main")
-    response = main(write_to_db=write_to_db)
+    rdb_response, s3_response = main(write_to_db=write_to_db)
 
     # Your logic here
     response = {
         "statusCode": 200,
         "body": json.dumps({
-            "message": f"Wrote nrows = {response}.",
+            "message": f"RDB response: Wrote nrows = {rdb_response}.\ns3 response: {s3_response}",
             "input": f"{event}"
         })
     }
