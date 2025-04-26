@@ -16,6 +16,8 @@ docker run -d ^
     -e JUMP_HOST="%JUMP_HOST%" ^
     -e JUMP_USER="%JUMP_USER%" ^
     -e JUMP_HOST_SSH_KEY="!EC2_SSH_KEY!" ^
+    -e AWS_ACCESS_KEY_ID="%AWS_ACCESS_KEY_ID%" ^
+    -e AWS_SECRET_ACCESS_KEY="%AWS_SECRET_ACCESS_KEY%" ^
     --platform linux/amd64 ^
     --entrypoint /aws-lambda/aws-lambda-rie ^
     --name %IMAGE_NAME%_local_test^

@@ -7,8 +7,11 @@ and save data to the database.
 """
 from datetime import datetime
 from typing import List, Dict, Any
+import json
 import logging
 import mysql.connector
+import boto3
+from botocore.exceptions import ClientError
 
 from src.setup import TABLE_NAME, RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
 MIN_START_DATETIME = datetime.now().replace(
@@ -105,7 +108,7 @@ def prepare_transaction(data: DataObject, table_name: str=TABLE_NAME) -> str:
 
 def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
     """
-    Save the data to the sqlite database.
+    Save the data to the mysql database.
     """
     try:
         cursor = conn.cursor()
@@ -115,3 +118,43 @@ def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
     except Exception as e:
         logger.error("failed to execute SQL inert")
         raise e
+
+def upload_to_s3(
+        data: dict,
+        bucket_name: str,
+        object_name: str,
+        region_name: str='us-west-1'
+        ) -> str:
+    """
+    Save the raw data aws s3
+    """
+    s3_client = boto3.client('s3', region_name=region_name)
+
+    try:
+        # Upload the JSON string as an object to S3.
+        response = s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_name,
+            Body=json.dumps(data),
+            ContentType='application/json',
+            IfNoneMatch='*'
+        )
+
+        # Check the response for success.
+        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            successful = True
+            error_details = None
+        else:
+            successful = False
+            error_details = (
+                "Upload failed with status code: "
+                f"{response['ResponseMetadata']['HTTPStatusCode']}"
+                )
+        return successful, error_details
+
+    except ClientError as e:
+        # Handle S3 errors
+        return False, f"Error uploading to S3: {e}"
+    except Exception as e: # pylint: disable=broad-exception-caught
+        # Handle other errors
+        return False, f"An unexpected error occurred: {e}"

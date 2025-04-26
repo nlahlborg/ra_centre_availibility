@@ -14,11 +14,12 @@ from pathlib import Path
 from datetime import datetime
 
 import logging
+import pytz
 
 from src.web_query import get_availability
 from src.parser import parse_availability_data
-from src.upload import get_only_new_data, prepare_transaction, save_data
-from src.setup import LOCAL_TZ, db_connect, load_env_file
+from src.upload import get_only_new_data, prepare_transaction, save_data, upload_to_s3
+from src.setup import LOCAL_TZ, db_connect, load_env_file, get_s3_bucket
 
 # Configure logging
 logger = logging.getLogger("main")
@@ -75,11 +76,24 @@ def main(write_to_db=False):
     logger.info(f"received value for write_to_db: {write_to_db}")
     logger.info("preparing to get courts availability data")
 
+    timestamp = datetime.now(tz=pytz.utc).strftime("%Y%m%dT%H%M%SZ")
     response = get_availability()
     data = response[0]["result"]["data"]
     dict_list = parse_availability_data(data)
 
-    logger.info(f"received {len(dict_list)} items from ra centre site")
+    logger.info(f"received {len(data)} items from ra centre site")
+
+    response = upload_to_s3(
+        data,
+        bucket_name=get_s3_bucket(),
+        object_name=f"raw_centre_raw_{timestamp}.json"
+        )
+    if response[0]:
+        logger.info(f"s3 upload response: {response}")
+        s3_response = f"uploaded batch of {len(data)} records to s3"
+    else:
+        logger.error(f"s3 upload error details: {response}")
+        s3_response = response[1]
 
     #save to mysql
     try:
@@ -100,7 +114,7 @@ def main(write_to_db=False):
         conn.close()
         server.stop()
 
-        return n_rows
+        return n_rows, s3_response
 
     except Exception as e:
         conn.close()
