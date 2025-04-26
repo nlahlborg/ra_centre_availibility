@@ -5,10 +5,14 @@ This module provides functions to handle the uploading of scraped data to a MySQ
 It includes functions to compare new data with existing data, prepare SQL transactions,
 and save data to the database.
 """
+import os
 from datetime import datetime
 from typing import List, Dict, Any
+import json
 import logging
 import mysql.connector
+import boto3
+from botocore.exceptions import ClientError
 
 from src.setup import TABLE_NAME, RA_CENTRE_TZ, ALL_COLS, INDEX2 as primary_key
 MIN_START_DATETIME = datetime.now().replace(
@@ -105,7 +109,7 @@ def prepare_transaction(data: DataObject, table_name: str=TABLE_NAME) -> str:
 
 def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
     """
-    Save the data to the sqlite database.
+    Save the data to the mysql database.
     """
     try:
         cursor = conn.cursor()
@@ -115,3 +119,33 @@ def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
     except Exception as e:
         logger.error("failed to execute SQL inert")
         raise e
+
+def upload_to_s3(data: dict, bucket_name: str, object_name: str, region_name: str='us-west-1') -> str:
+    """
+    Save the data aws s3
+    """
+    s3_client = boto3.client('s3', region_name=region_name)
+    json_string = json.dumps(data)
+
+    try:
+        # Upload the JSON string as an object to S3.
+        response = s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_name,
+            Body=json_string,
+            ContentType='application/json',  # Set the content type to application/json
+            IfNoneMatch='*'
+        )
+
+        # Check the response for success.  A successful upload will usually return a 200 status code.
+        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            return True, None
+        else:
+            return False, f"Upload failed with status code: {response['ResponseMetadata']['HTTPStatusCode']}"
+
+    except ClientError as e:
+        # Handle S3 errors (e.g., bucket not found, access denied).
+        return False, f"Error uploading to S3: {e}"
+    except Exception as e:
+        # Handle other errors (e.g., JSON serialization issues).
+        return False, f"An unexpected error occurred: {e}"

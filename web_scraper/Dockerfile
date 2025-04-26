@@ -23,7 +23,6 @@ RUN pip install -r requirements.txt --target ${FUNCTION_DIR} && \
 COPY src ${FUNCTION_DIR}/src
 COPY main.py ${FUNCTION_DIR}/main.py
 COPY lambda_function.py ${FUNCTION_DIR}/lambda_function.py
-COPY secrets ${FUNCTION_DIR}/secrets
 COPY ./.env ${FUNCTION_DIR}/.env
 
 # Multi-stage build with distroless for even smaller image
