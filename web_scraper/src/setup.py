@@ -115,8 +115,13 @@ def db_connect():
         return None
 
 def get_s3_bucket():
+    """
+    return the correct s3 bucket for prod and dev deployments
+    """
     my_env = os.environ.get("ENV", "dev")
     if my_env == "prod":
-        return "ra-center-raw-data-prod"
+        s3_bucket = "ra-center-raw-data-prod"
     else:
-        return "ra-center-raw-data-dev"
+        s3_bucket = "ra-center-raw-data-dev"
+
+    return s3_bucket

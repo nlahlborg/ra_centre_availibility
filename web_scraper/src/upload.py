@@ -119,7 +119,12 @@ def save_data(sql: str, conn: mysql.connector.connection.MySQLConnection):
         logger.error("failed to execute SQL inert")
         raise e
 
-def upload_to_s3(data: dict, bucket_name: str, object_name: str, region_name: str='us-west-1') -> str:
+def upload_to_s3(
+        data: dict,
+        bucket_name: str,
+        object_name: str,
+        region_name: str='us-west-1'
+        ) -> str:
     """
     Save the raw data aws s3
     """
@@ -135,15 +140,21 @@ def upload_to_s3(data: dict, bucket_name: str, object_name: str, region_name: st
             IfNoneMatch='*'
         )
 
-        # Check the response for success. 
+        # Check the response for success.
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return True, None
+            successful = True
+            error_details = None
         else:
-            return False, f"Upload failed with status code: {response['ResponseMetadata']['HTTPStatusCode']}"
+            successful = False
+            error_details = (
+                "Upload failed with status code: "
+                f"{response['ResponseMetadata']['HTTPStatusCode']}"
+                )
+        return successful, error_details
 
     except ClientError as e:
         # Handle S3 errors
         return False, f"Error uploading to S3: {e}"
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         # Handle other errors
         return False, f"An unexpected error occurred: {e}"
