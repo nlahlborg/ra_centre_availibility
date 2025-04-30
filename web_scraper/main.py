@@ -10,7 +10,6 @@ saving new data to the database.
 Example:
     python main.py
 """
-from pathlib import Path
 from datetime import datetime
 
 import logging
@@ -78,7 +77,7 @@ def main():
         bucket_name=get_s3_bucket(),
         object_name=f"raw_centre_raw_{timestamp}.json"
         )
-    
+
     if response[0]:
         logger.info(f"s3 upload response: {response}")
         s3_response = f"uploaded batch of {len(data)} records to s3"

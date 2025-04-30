@@ -1,3 +1,8 @@
+"""
+unit test constants
+"""
+#pylint: disable=line-too-long
+
 HTML_PAYLOAD_SAMPLE = """
 <!DOCTYPE HTML>
 

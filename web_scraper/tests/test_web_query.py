@@ -1,9 +1,13 @@
+"""
+tests for functions in src/parser_utils.py
+"""
+#pylint: disable=import-error, wrong-import-position, line-too-long
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.web_query import get_context_auth
-from tests.fixtures import HTML_PAYLOAD_SAMPLE
+from web_scraper.tests.fixture_constants import HTML_PAYLOAD_SAMPLE
 
 def test_get_context_auth():
     """
@@ -22,4 +26,4 @@ def test_get_context_auth():
     assert result["service"] == "apexremote"
 
 if __name__ == "__main__":
-    test_get_context_auth()
+    pass
