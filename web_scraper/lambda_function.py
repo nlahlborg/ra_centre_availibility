@@ -40,17 +40,14 @@ def handler(event, context):
         dict: The response object.
     """
     # pylint: disable=unused-argument, import-outside-toplevel
-    _, write_to_db = next(iter(event.items()))
-    logger.info(f"Received event: {event}")
     from main import main
     logger.info("preparing to run main")
-    rdb_response, s3_response = main(write_to_db=write_to_db)
+    s3_response = main()
 
-    # Your logic here
     response = {
         "statusCode": 200,
         "body": json.dumps({
-            "message": f"RDB response: Wrote nrows = {rdb_response}.\ns3 response: {s3_response}",
+            "message": f"s3 response: {s3_response}",
             "input": f"{event}"
         })
     }

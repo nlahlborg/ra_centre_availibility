@@ -9,7 +9,7 @@ docker stop %IMAGE_NAME%_local_test
 docker rm %IMAGE_NAME%_local_test
 
 REM build image
-docker buildx build --platform linux/amd64 --provenance=false -t docker-image:%IMAGE_NAME%_test .
+docker buildx build --platform linux/amd64 --provenance=false -t docker-image:%IMAGE_NAME% .
 REM start container
 docker run -d ^
     -v "%USERPROFILE%\.aws-lambda-rie:/aws-lambda" -p 9000:8080 ^
@@ -20,9 +20,9 @@ docker run -d ^
     -e AWS_SECRET_ACCESS_KEY="%AWS_SECRET_ACCESS_KEY%" ^
     --platform linux/amd64 ^
     --entrypoint /aws-lambda/aws-lambda-rie ^
-    --name %IMAGE_NAME%_local_test^
+    --name %IMAGE_NAME%^
     --stop-timeout 60 ^
-    docker-image:"%IMAGE_NAME%_test" ^
+    docker-image:"%IMAGE_NAME%" ^
     /usr/local/bin/python -m awslambdaric lambda_function.handler
 
 REM test the lambda function
