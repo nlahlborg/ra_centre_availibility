@@ -9,11 +9,11 @@ import pytest
 
 from src.parser import get_facility_type, parse_object_name, parse_data
 from tests.helpers.helper_constants import (
-    GET_FACILITY_TYPE_FIXTURE, PARSE_OBJECT_NAME_FIXTURE,
-    PARSE_DATA_FIXTURE
+    GET_FACILITY_TYPE_TEST_CONSTANT, PARSE_OBJECT_NAME_TEST_CONSTANT,
+    PARSE_DATA_TEST_CONSTANT
 )
 
-@pytest.mark.parametrize("facility_name,expected", GET_FACILITY_TYPE_FIXTURE)
+@pytest.mark.parametrize("facility_name,expected", GET_FACILITY_TYPE_TEST_CONSTANT)
 def test_get_facility_type(facility_name, expected):
     """
     Test the regex in the get facility type function
@@ -21,7 +21,7 @@ def test_get_facility_type(facility_name, expected):
     facility_type = get_facility_type(facility_name)
     assert facility_type == expected
 
-@pytest.mark.parametrize("object_name,prefix,expected", PARSE_OBJECT_NAME_FIXTURE)
+@pytest.mark.parametrize("object_name,prefix,expected", PARSE_OBJECT_NAME_TEST_CONSTANT)
 def test_parse_object_name(object_name, prefix, expected):
     """
     Test string parsing in the get_parse_object_name funciton
@@ -30,7 +30,7 @@ def test_parse_object_name(object_name, prefix, expected):
 
     assert datetime_value == expected
 
-@pytest.mark.parametrize("data,scraped_datetime,expected", PARSE_DATA_FIXTURE)
+@pytest.mark.parametrize("data,scraped_datetime,expected", PARSE_DATA_TEST_CONSTANT)
 def test_parse_data(data, scraped_datetime, expected):
     """
     Test that parse data creates the right data structure

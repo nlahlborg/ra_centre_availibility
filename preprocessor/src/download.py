@@ -14,6 +14,9 @@ def get_object_names(
         bucket, 
         region_name: str='us-west-1'
         ):
+    """
+    get the object names from the listed s3 bucket, sorted ascending
+    """
     
     try:
         client = boto3.client('s3', region_name=region_name)
@@ -27,7 +30,8 @@ def get_object_names(
         else:
             object_names = []
 
-        return object_names
+        return object_names.sort()
+    
     except ClientError as e:        
         logger.exception(f"Error reading from S3: {e}")
         return []

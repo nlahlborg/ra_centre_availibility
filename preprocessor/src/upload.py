@@ -127,7 +127,7 @@ def generate_insert_sql(data, id_col_name, table_name, schema="source"):
 
     return sql, values
 
-def load_facility(data, id_col_name, cursor, schema="source"):
+def load_facility(data, cursor, schema="source"):
     """
     Loads facility data into the facilities table, checking for duplicates.
 
@@ -156,7 +156,7 @@ def load_facility(data, id_col_name, cursor, schema="source"):
         # Facility does not exist, insert it, and get the generated ID
         sql, values = generate_insert_sql(
             data,
-            id_col_name,
+            id_col_name="facility_id",
             table_name="facilities",
             schema=schema)
         cursor.execute(sql, values)
@@ -164,7 +164,7 @@ def load_facility(data, id_col_name, cursor, schema="source"):
 
     return id
 
-def load_timeslot(data, id_col_name, cursor, schema="source"):
+def load_timeslot(data, cursor, schema="source"):
     """
     Loads facility data into the timeslots table, checking for duplicates.
 
@@ -177,7 +177,7 @@ def load_timeslot(data, id_col_name, cursor, schema="source"):
     """
 
     id = None
-    # Check if the facility already exists based on its name
+    # Check if the timeslot already exists based on its name
     query = f"""
         SELECT timeslot_id 
         FROM {schema}.timeslots 
@@ -198,7 +198,7 @@ def load_timeslot(data, id_col_name, cursor, schema="source"):
         # Facility does not exist, insert it, and get the generated ID
         sql, values = generate_insert_sql(
             data,
-            id_col_name=id_col_name,
+            id_col_name="timeslot_id",
             table_name="timeslots",
             schema=schema)
         cursor.execute(sql, values)
@@ -207,21 +207,20 @@ def load_timeslot(data, id_col_name, cursor, schema="source"):
     return id
 
 def load_slot_event(data, 
-    id_col_name,
     facility_id,
     timeslot_id,
     cursor,
     schema="source"):
 
     id = None
-
     #get the most recent record matching facility and timeslot
     query = f"""
-        SELECT event_id, num_people
+        SELECT event_id, num_people, scraped_datetime
         FROM {schema}.reservation_system_events 
         WHERE 
             facility_id = {facility_id}
             AND timeslot_id = {timeslot_id}
+            AND week_number = {data["week_number"]}
         ORDER BY scraped_datetime DESC
         LIMIT 1
     """
@@ -229,6 +228,8 @@ def load_slot_event(data,
     existing_slot_event = cursor.fetchone()
 
     if existing_slot_event:
+        if existing_slot_event[2] >= data["scraped_datetime"]:
+            raise ValueError("Scraped Datetime must be greater than most recent previous matching record")
         if existing_slot_event[1] == data["num_people"]:
             # if the number of people is the same as the previous most recent record,
             # then this is a duplicate so don't insert it
@@ -250,7 +251,7 @@ def load_slot_event(data,
         data["timeslot_id"] = timeslot_id
         sql, values = generate_insert_sql(
             data,
-            id_col_name=id_col_name,
+            id_col_name="event_id",
             table_name="reservation_system_events",
             schema=schema)
         cursor.execute(sql, values)
@@ -280,13 +281,12 @@ def load_single_record(data, column_map, object_name, cursor):
     structured_data = restructure_data_for_tables(data, column_map)
     
     logger.debug("loading facilities data")
-    facility_id = load_facility(structured_data["facilities"], "facility_id", cursor)
+    facility_id = load_facility(structured_data["facilities"], cursor)
     logger.debug("loading timeslots data")
-    timeslot_id = load_timeslot(structured_data["timeslots"], "timeslot_id", cursor)
+    timeslot_id = load_timeslot(structured_data["timeslots"], cursor)
     logger.debug("loading reservation_system_events data")
     event_id = load_slot_event(
         data=structured_data["reservation_system_events"], 
-        id_col_name="event_id",
         facility_id=facility_id, 
         timeslot_id=timeslot_id, 
         cursor=cursor)
