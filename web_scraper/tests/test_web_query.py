@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.web_query import get_context_auth
-from web_scraper.tests.fixture_constants import HTML_PAYLOAD_SAMPLE
+from tests.helper_constants import HTML_PAYLOAD_SAMPLE
 
 def test_get_context_auth():
     """
