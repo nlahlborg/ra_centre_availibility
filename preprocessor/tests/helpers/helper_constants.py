@@ -159,6 +159,13 @@ GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT = (
         ],
         []
     ),
+    #unprocessed but stale date
+    (
+        [
+            "raw_centre_raw_20240426T000200Z.json",
+        ],
+        []
+    ),
 )
 
 RESTRUCTURE_DATA_FOR_TABLES_TEST_CONSTANT = (

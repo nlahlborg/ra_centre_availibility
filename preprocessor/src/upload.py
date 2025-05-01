@@ -11,13 +11,31 @@ logger = logging.getLogger(__name__)
 
 def get_list_of_unprocessed_object_names(object_names, conn, schema="helper"):
     try:
-        placeholder = ", ".join([f"'{x}'" for x in object_names])
+        placeholder = ", ".join([f"('{x}', '{parse_object_name(x).strftime('%Y-%m-%d %H:%M:%S%z')}'::timestamptz)" for x in object_names])
 
         # SQL query to fetch object names from the database that are in the provided list.
         query = f"""
-            SELECT t.object_name
-            FROM UNNEST(ARRAY[{placeholder}]) AS t(object_name)
-            WHERE object_name NOT IN (SELECT object_name FROM {schema}.helper_loaded_objects);
+            WITH input_data AS (
+                SELECT *
+                FROM (
+                    VALUES 
+                        {placeholder}
+                ) AS t(object_name, scraped_datetime)
+            ),
+            max_datetime AS (
+                SELECT MAX(scraped_datetime) AS max_date
+                FROM "{schema}".helper_loaded_objects
+            )
+            SELECT 
+                i.object_name,
+                i.scraped_datetime
+            FROM 
+                input_data i
+            CROSS JOIN
+                max_datetime m
+            WHERE 
+                i.object_name NOT IN (SELECT object_name FROM "{schema}".helper_loaded_objects)
+                AND i.scraped_datetime > m.max_date;
         """
         cursor = conn.cursor()
         cursor.execute(query) 
