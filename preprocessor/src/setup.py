@@ -5,7 +5,7 @@ import logging
 import pytz
 import paramiko
 from sshtunnel import SSHTunnelForwarder
-import psycopg2
+import psycopg
 import dotenv
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ def db_connect():
 
             logger.info("SSH tunnel established. Connecting to PosgreSQL database...")
 
-            conn = psycopg2.connect(
+            conn = psycopg.connect(
                 host='127.0.0.1',
                 port=server.local_bind_port,
                 user=rds_user,
@@ -98,7 +98,7 @@ def db_connect():
             rds_password = os.environ.get("DB_PSWD_DEV")
             rds_db_name = os.environ.get("DB_NAME_DEV")
 
-            conn = psycopg2.connect(
+            conn = psycopg.connect(
                 host=rds_host,
                 port=rds_port,
                 user=rds_user,
@@ -110,7 +110,7 @@ def db_connect():
 
         return server, conn
     
-    except psycopg2.Error as err:
+    except psycopg.Error as err:
         logger.error(f"Error connecting to PosgreSQL database: {err}")
         if server:
             server.stop()

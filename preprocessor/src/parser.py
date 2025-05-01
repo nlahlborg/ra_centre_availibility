@@ -42,7 +42,7 @@ def get_tz_aware_datetime(timestamp: int, tz=TZ) -> datetime:
     """
     converts a timestamp to timezone aware datetime
     """
-    return datetime.fromtimestamp(int(timestamp/1000)).replace(tzinfo=TZ)
+    return datetime.fromtimestamp(int(timestamp/1000)).replace(tzinfo=tz)
 
 def get_facility_type(facility_name: str) -> str:
     """

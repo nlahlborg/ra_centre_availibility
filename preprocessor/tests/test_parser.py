@@ -8,7 +8,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
 from src.parser import get_facility_type, parse_object_name, parse_data
-from tests.fixtures.fixture_constants import (
+from tests.helpers.helper_constants import (
     GET_FACILITY_TYPE_FIXTURE, PARSE_OBJECT_NAME_FIXTURE,
     PARSE_DATA_FIXTURE
 )

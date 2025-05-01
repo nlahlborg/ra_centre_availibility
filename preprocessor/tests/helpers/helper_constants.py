@@ -83,3 +83,39 @@ PARSE_DATA_FIXTURE = (
         }
     ),
 )
+
+# (object_names_in, filepath, expected)
+GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_FIXTURE = (
+    #nothing
+    ([], []),
+    #some unprocessed
+    (
+        [
+            "raw_centre_raw_20250426T000200Z.json",
+            "raw_centre_raw_20250426T000433Z.json",
+            "raw_centre_raw_20250428T000000Z.json",
+        ],
+        [
+            "raw_centre_raw_20250428T000000Z.json"
+        ]
+    ),
+    #none_processed
+    (
+        [
+            "raw_centre_raw_20250428T000000Z.json",
+            "raw_centre_raw_20250428T000100Z.json",
+        ],
+        [
+            "raw_centre_raw_20250428T000000Z.json",
+            "raw_centre_raw_20250428T000100Z.json",
+        ]
+    ),
+    #all_processed
+    (
+        [
+            "raw_centre_raw_20250426T000200Z.json",
+            "raw_centre_raw_20250426T000433Z.json",
+        ],
+        []
+    ),
+)

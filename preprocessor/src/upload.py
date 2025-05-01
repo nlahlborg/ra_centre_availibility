@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 
-import psycopg2
+import psycopg
 
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
@@ -25,7 +25,7 @@ def get_list_of_unprocessed_object_names(object_names, conn, schema="helper"):
         unprocessed_object_names = [row[0] for row in result]
         return unprocessed_object_names
 
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")
         return []
     except Exception as e:
@@ -56,7 +56,7 @@ def get_table_column_mapping(conn, schema="source"):
 
     try:
         cursor = conn.cursor()
-        cursor.execute(query, (schema,))
+        cursor.execute(query)
 
         results = cursor.fetchall()
 
@@ -67,7 +67,7 @@ def get_table_column_mapping(conn, schema="source"):
 
         return column_map
     
-    except psycopg2.Error as e:
+    except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")
         return []
     except Exception as e:
@@ -330,7 +330,7 @@ def load_data(conn, server, write_to_db=True):
                 conn.commit()
                 logger.info(f"uploaded data for {object_name}")
 
-            except psycopg2.Error as e:
+            except psycopg.Error as e:
                 conn.rollback()
                 logger.error(f"Error loading data: {e}")
             except KeyError as e:
