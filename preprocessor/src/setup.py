@@ -111,6 +111,8 @@ def db_connect():
                 dbname=rds_db_name,
                 connect_timeout=10,
             )
+
+            print(conn)
             server = None
 
         return server, conn

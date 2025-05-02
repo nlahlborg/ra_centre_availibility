@@ -39,4 +39,4 @@ def main(write_to_db=False):
     return retvar
 
 if __name__ == "__main__":
-    pass
+    _ = main(False)

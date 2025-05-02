@@ -22,6 +22,7 @@ jobs:
           cd web_scraper
           python -m pip install --upgrade pip
           pip install pytest
+          pip install pytest-postgresql
           pip install -r requirements.txt
 
       - name: Run Pytest

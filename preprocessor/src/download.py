@@ -30,7 +30,7 @@ def get_object_names(
         else:
             object_names = []
 
-        return object_names.sort()
+        return sorted(object_names)
 
     except ClientError as e:
         logger.error(f"Error reading from S3: {e}")
