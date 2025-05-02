@@ -2,8 +2,8 @@
 web_scraper.main
 
 This module is the entry point for the web scraping application that retrieves
-availability data from the RA Centre website and optionally saves it to a MySQL
-database. The main function orchestrates the entire process, including setting
+availability data from the RA Centre website and saves it to S3 as a json file.
+The main function orchestrates the entire process, including setting
 up the environment, establishing database connections, scraping data, and
 saving new data to the database.
 

@@ -10,7 +10,6 @@ slot IDs and determine facility types.
 from datetime import datetime
 import re
 import logging
-import json
 
 from src.setup import RA_CENTRE_TZ as TZ
 
@@ -41,14 +40,22 @@ def get_facility_type(facility_name: str) -> str:
     return facility_type
 
 def parse_object_name(object_name, prefix="raw_centre_raw_"):
+    """
+    extract the date strong from the object name
+
+    Args:
+        object_name (str): the object name from S3
+        prefix (str): the prefix that comes before the date info
+
+    """
     try:
         date_string = object_name.split(prefix)[-1]
         date_string = date_string.split(".json")[0]
         return datetime.strptime(date_string, "%Y%m%dT%H%M%SZ").astimezone(TZ)
 
-    except ValueError:
+    except ValueError as e:
         logger.error(f"received incorrectly formatted object name {object_name}")
-        raise(ValueError)
+        raise e
 
 def parse_data(data: str, scraped_datetime: datetime) -> dict | None:
     """
@@ -89,10 +96,11 @@ def parse_data(data: str, scraped_datetime: datetime) -> dict | None:
         data_line["scraped_datetime"] = scraped_datetime
         data_line["inserted_datetime"] = datetime.now(tz=TZ)
         data_line["day_of_week"] = start_datetime.strftime("%A")
-        data_line["release_interval_days"] = (start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
+        data_line["release_interval_days"] = (
+            start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
 
         return data_line, scraped_datetime
 
     except (ValueError, TypeError, KeyError) as e:
-        logger.warning(f"Error processing item: {data.get('name')}. Error: {e}")
+        logger.warning(f"Error processing item: {data.get('name')}. Error: {e}") #pylint: disable=logging-fstring-interpolation
         return None, None

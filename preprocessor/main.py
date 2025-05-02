@@ -1,3 +1,10 @@
+"""
+preprocessor.main
+
+This module is the entry point for the preprocesser application
+that reads json documents from S3 and transforms them into a 
+a relational database (star) schema.
+"""
 from pathlib import Path
 import logging
 from src.setup import db_connect, load_env_file
@@ -5,8 +12,6 @@ from src.upload import load_data
 
 logger = logging.getLogger("preprocessor.main")
 logging.basicConfig(level=logging.INFO)
-
-from pprint import pprint
 
 def main(write_to_db=False):
     """"
@@ -34,4 +39,4 @@ def main(write_to_db=False):
     return retvar
 
 if __name__ == "__main__":
-    ids = main(True)
+    pass

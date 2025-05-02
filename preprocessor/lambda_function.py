@@ -39,7 +39,7 @@ def handler(event, context):
     Returns:
         dict: The response object.
     """
-    # pylint: disable=unused-argument, import-outside-toplevel
+    # pylint: disable=unused-argument, logging-fstring-interpolation, import-outside-toplevel
     _, write_to_db = next(iter(event.items()))
     logger.info(f"Received event: {event}")
     from main import main

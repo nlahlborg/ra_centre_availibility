@@ -1,3 +1,8 @@
+"""
+web_scraper.src.setup
+
+This module provides the setup and configuration for the preprosser
+"""
 import os
 from io import StringIO
 import logging
@@ -10,7 +15,7 @@ import dotenv
 
 logger = logging.getLogger(__name__)
 
-RA_CENTRE_TZ = pytz.utc # timestamps from RA center website are in UTC and so are times defined by this etl
+RA_CENTRE_TZ = pytz.utc # timestamps from RA center website are in UTC
 ENV = os.environ.get("ENV", "dev")
 
 def get_s3_bucket():
@@ -30,7 +35,7 @@ def load_env_file(filepath):
 
     Args:
         filepath: The path to the .env file.  Handles both forward and backslashes.
-    
+
     Returns:
         True if the .env file was loaded successfully, False otherwise.
         Prints informative messages to the console if there are errors.
@@ -43,7 +48,7 @@ def load_env_file(filepath):
     except FileNotFoundError:
         logger.error(f"Error: .env file not found at {filepath}")
         return False
-    
+
 def db_connect():
     """
     configure database connection
@@ -109,7 +114,7 @@ def db_connect():
             server = None
 
         return server, conn
-    
+
     except psycopg.Error as err:
         logger.error(f"Error connecting to PosgreSQL database: {err}")
         if server:

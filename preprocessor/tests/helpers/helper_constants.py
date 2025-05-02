@@ -119,7 +119,7 @@ PARSE_OBJECT_NAME_TEST_CONSTANT = (
 
 PARSE_DATA_TEST_CONSTANT = (
     (
-        SAMPLE_RAW_JSON, 
+        SAMPLE_RAW_JSON,
         datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
         SAMPLE_PARSED_DATA
     ),
@@ -220,7 +220,7 @@ LOAD_FACILITY_TEST_CONSTANT = (
         1
     ),
     #facility doesn't match existing id
-    
+
     (
         {
             'facility_name': 'other facility',
@@ -243,7 +243,7 @@ LOAD_TIMESLOT_TEST_CONSTANT = (
         1
     ),
     #timeslot doesn't match existing id
-    
+
     (
         {
         'day_of_week': 'Saturday',

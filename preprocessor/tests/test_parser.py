@@ -41,6 +41,3 @@ def test_parse_data(data, scraped_datetime, expected):
     _ = data.pop("inserted_datetime")
 
     assert data == expected
-
-if __name__ == "__main__":
-    pass

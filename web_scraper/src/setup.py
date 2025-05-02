@@ -2,8 +2,6 @@
 web_scraper.src.setup
 
 This module provides the setup and configuration for the web scraping application.
-It includes functions to load environment variables, retrieve database passwords,
-and establish SSH tunnels and MySQL database connections.
 """
 
 import os
