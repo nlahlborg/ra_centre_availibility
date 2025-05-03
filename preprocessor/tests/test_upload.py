@@ -27,7 +27,7 @@ from tests.helpers.helper_constants import (
     LOAD_SLOT_EVENT_TEST_CONSTANT
 )
 
-if os.environ.get("ENV", "github"):
+if os.environ.get("ENV") == "github":
     postgresql_github_test = factories.postgresql_proc(
         port=None,
         unixsocketdir='/var/run',

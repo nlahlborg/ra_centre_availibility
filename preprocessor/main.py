@@ -39,4 +39,6 @@ def main(write_to_db=False):
     return retvar
 
 if __name__ == "__main__":
-    _ = main(False)
+    # set a local variable to prod and call this main script to do manual initial
+    # DB population or manual backfils
+    _ = main(True)
