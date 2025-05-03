@@ -12,16 +12,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Pull PostgreSQL Docker Image
+        run: docker compose -f postgresql-docker-compose.yaml pull postgresql
+
+      - name: Start PostgreSQL Docker
+        run: docker-compose -f postgresql-docker-compose.yaml
+
+      - name: Wait for PostgreSQL to be ready
+        run: timeout 30s bash -c 'until docker compose exec -T postgresql pg_isready; do sleep 1; done'
+
       - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
           python-version: 3.13
-      - name: Install Postgresql
-        run: |
-          sudo apt update
-          sudo apt install -y postgresql
-          sudo systemctl start postgresql.service
-      - name: Install dependencies
+          
+      - name: Install Python app dependencies
         run: |
           cd preprocessor
           python -m pip install --upgrade pip

@@ -27,32 +27,17 @@ from tests.helpers.helper_constants import (
     LOAD_SLOT_EVENT_TEST_CONSTANT
 )
 
-if os.environ.get("ENV") == "github":
-    postgresql_github_test = factories.postgresql_proc(
-        user='postgres',
-        password='postgres',
-        port=None,
-        unixsocketdir='/var/run',
-        load=[
-            Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
-            Path(__file__).parent / "helpers" / "helper_helper_loaded_objects_blank.sql",
-            Path(__file__).parent / "helpers" / "source_facilities.sql",
-            Path(__file__).parent / "helpers" / "source_timeslots.sql",
-            Path(__file__).parent / "helpers" / "source_reservation_system_events.sql"
-            ])
-    conn_fixture = factories.postgresql("postgresql_github_test", dbname="test")
-else:
-    postgresql_local_dev = factories.postgresql_noproc(
-        user='postgres',
-        password='postgres',
-        load=[
-            Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
-            Path(__file__).parent / "helpers" / "helper_helper_loaded_objects_blank.sql",
-            Path(__file__).parent / "helpers" / "source_facilities.sql",
-            Path(__file__).parent / "helpers" / "source_timeslots.sql",
-            Path(__file__).parent / "helpers" / "source_reservation_system_events.sql"
-            ])
-    conn_fixture = factories.postgresql("postgresql_local_dev", dbname="test")
+postgresql_local_dev = factories.postgresql_noproc(
+    user='postgres',
+    password='postgres',
+    load=[
+        Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
+        Path(__file__).parent / "helpers" / "helper_helper_loaded_objects_blank.sql",
+        Path(__file__).parent / "helpers" / "source_facilities.sql",
+        Path(__file__).parent / "helpers" / "source_timeslots.sql",
+        Path(__file__).parent / "helpers" / "source_reservation_system_events.sql"
+        ])
+conn_fixture = factories.postgresql("postgresql_local_dev", dbname="test")
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
 def test_get_list_of_unprocessed_object_names(conn_fixture, object_names, expected) -> None:
