@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 RA_CENTRE_TZ = pytz.utc # timestamps from RA center website are in UTC
 ENV = os.environ.get("ENV", "dev")
-print(f"********************* ENV={ENV}")
 
 def get_s3_bucket():
     """
@@ -59,17 +58,14 @@ def db_connect():
         conn: PosgreSQL db connection object
     """
     server = None
-    print("*********************** got here 0")
     try:
         if ENV == "prod" or ENV == "lambda_stage":
-            logger.info("*********************** got here 1")
             ssh_key = os.environ.get("JUMP_HOST_SSH_KEY", os.environ.get("EC2_SSH_KEY"))
             shh_key = ssh_key.replace(r"\n", "\n")
             pkey = paramiko.Ed25519Key.from_private_key(StringIO(shh_key))
             jump_host = os.environ.get("JUMP_HOST")
             jump_user = os.environ.get("JUMP_USER")
 
-            print("*********************** got here 2")
             rds_host = os.environ.get("DB_HOST_PROD")
             rds_port = int(os.environ.get("DB_PORT_PROD"))
             rds_user = os.environ.get("DB_USER_PROD")
@@ -77,7 +73,6 @@ def db_connect():
             rds_db_name = os.environ.get("DB_NAME_PROD")
             local_port = int(os.environ.get("LOCAL_PORT"))
 
-            print("*********************** got here 3")
             server = SSHTunnelForwarder(
                 (jump_host, 22),
                 ssh_username=jump_user,
