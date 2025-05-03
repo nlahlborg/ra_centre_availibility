@@ -59,7 +59,7 @@ def db_connect():
     """
     server = None
     try:
-        if ENV == "prod" or ENV == "lambda_stage":
+        if ENV in ["prod", "lambda_stage"]:
             ssh_key = os.environ.get("JUMP_HOST_SSH_KEY", os.environ.get("EC2_SSH_KEY"))
             shh_key = ssh_key.replace(r"\n", "\n")
             pkey = paramiko.Ed25519Key.from_private_key(StringIO(shh_key))

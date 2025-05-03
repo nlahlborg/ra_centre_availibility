@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=broad-exception-caught
 def get_list_of_unprocessed_object_names(
-        object_names, 
+        object_names,
         conn,
         table="helper_loaded_objects",
         schema="helper"
@@ -374,7 +374,7 @@ def load_data(conn, server, write_to_db=True):
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
     """
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, too-many-branches
     logger.info("retreiving list of available S3 objects")
     s3_bucket = get_s3_bucket()
     objects_list = get_object_names(bucket=s3_bucket)
