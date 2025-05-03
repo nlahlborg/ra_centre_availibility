@@ -29,7 +29,7 @@ from tests.helpers.helper_constants import (
 
 if os.environ.get("ENV", "github"):
     postgresql_github_test = factories.postgresql_proc(
-        port=None, 
+        port=None,
         unixsocketdir='/var/run',
         load=[
             Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
