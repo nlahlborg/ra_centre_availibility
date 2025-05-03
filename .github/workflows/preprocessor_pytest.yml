@@ -17,10 +17,7 @@ jobs:
         run: docker compose -f postgresql-docker-compose.yaml pull postgresql
 
       - name: Start PostgreSQL Docker
-        run: docker-compose -f postgresql-docker-compose.yaml
-
-      - name: Wait for PostgreSQL to be ready
-        run: timeout 30s bash -c 'until docker compose exec -T postgresql pg_isready; do sleep 1; done'
+        run: docker-compose -f postgresql-docker-compose.yaml up
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v3
