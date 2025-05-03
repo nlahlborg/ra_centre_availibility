@@ -14,7 +14,12 @@ from src.download import get_object_names, get_json_data
 logger = logging.getLogger(__name__)
 
 # pylint: disable=broad-exception-caught
-def get_list_of_unprocessed_object_names(object_names, conn, schema="helper"):
+def get_list_of_unprocessed_object_names(
+        object_names, 
+        conn,
+        table="helper_loaded_objects",
+        schema="helper"
+        ):
     """
     query the helper table to see which objects have already been uploaded
     and return as a list all the objects which are (1) not in the db and (2) 
@@ -30,24 +35,29 @@ def get_list_of_unprocessed_object_names(object_names, conn, schema="helper"):
             WITH input_data AS (
                 SELECT *
                 FROM (
-                    VALUES 
+                    VALUES
                         {placeholder}
                 ) AS t(object_name, scraped_datetime)
             ),
+            existing_data AS (
+                SELECT
+                    object_name,
+                    scraped_datetime
+                FROM "{schema}".{table}
+            ),
             max_datetime AS (
-                SELECT MAX(scraped_datetime) AS max_date
-                FROM "{schema}".helper_loaded_objects
+                SELECT
+                    MAX(scraped_datetime) AS max_date
+                FROM "{schema}".{table}
             )
-            SELECT 
+            SELECT
                 i.object_name,
                 i.scraped_datetime
-            FROM 
-                input_data i
-            CROSS JOIN
-                max_datetime m
-            WHERE 
-                i.object_name NOT IN (SELECT object_name FROM "{schema}".helper_loaded_objects)
-                AND i.scraped_datetime > m.max_date;
+            FROM input_data i
+            LEFT JOIN existing_data e ON i.object_name = e.object_name
+            CROSS JOIN max_datetime m
+            WHERE e.object_name IS NULL
+            AND (m.max_date IS NULL OR i.scraped_datetime > m.max_date);
         """
         cursor = conn.cursor()
         cursor.execute(query)
@@ -370,6 +380,13 @@ def load_data(conn, server, write_to_db=True):
     objects_list = get_object_names(bucket=s3_bucket)
     new_objects_list = get_list_of_unprocessed_object_names(objects_list, conn)
 
+    if new_objects_list:
+        logger.info(
+            f"preparing to process {len(new_objects_list)} "
+            f"new objects out of {len(objects_list)}."
+            )
+    else:
+        logger.info("No new objects found. Will shut down.")
     try:
         for object_name in new_objects_list:
             logger.info(f"processing object {object_name}")
@@ -394,8 +411,9 @@ def load_data(conn, server, write_to_db=True):
                         ids_list.append(ids)
 
                 #commit transactions from entire object together otherwise rollback
-                _ = load_helper_data(object_name, cursor)
-                conn.commit()
+                if write_to_db:
+                    _ = load_helper_data(object_name, cursor)
+                    conn.commit()
                 logger.info(f"uploaded data for {object_name}")
 
             except psycopg.Error as e:
@@ -412,12 +430,12 @@ def load_data(conn, server, write_to_db=True):
 
         conn.close()
         if server:
-            server.exit()
+            server.stop()
 
         return True
     except Exception:
         logger.exception("an unhandled exception occured ouside of the write transactions")
         conn.close()
         if server:
-            server.exit()
+            server.stop()
         return False

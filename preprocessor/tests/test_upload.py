@@ -31,6 +31,7 @@ postgresql_local_dev = factories.postgresql_noproc(
     password='postgres',
     load=[
         Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
+        Path(__file__).parent / "helpers" / "helper_helper_loaded_objects_blank.sql",
         Path(__file__).parent / "helpers" / "source_facilities.sql",
         Path(__file__).parent / "helpers" / "source_timeslots.sql",
         Path(__file__).parent / "helpers" / "source_reservation_system_events.sql"
@@ -43,6 +44,20 @@ def test_get_list_of_unprocessed_object_names(conn_fixture, object_names, expect
     Test get_list_of_unprocessed_object_names
     """
     result = get_list_of_unprocessed_object_names(object_names, conn_fixture)
+    try:
+        assert result == expected
+    except AssertionError as e:
+        conn_fixture.close()
+        raise e@pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
+
+def test_get_list_of_unprocessed_object_names_blank_table(conn_fixture) -> None:
+    """
+    Test get_list_of_unprocessed_object_names
+    """
+
+    object_names = ["raw_centre_raw_20250426T000200Z.json"]
+    expected = object_names.copy()
+    result = get_list_of_unprocessed_object_names(object_names, conn_fixture, table="helper_loaded_objects_blank")
     try:
         assert result == expected
     except AssertionError as e:
