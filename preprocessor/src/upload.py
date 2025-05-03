@@ -63,7 +63,7 @@ def get_list_of_unprocessed_object_names(
         cursor.execute(query)
         result = cursor.fetchall()
         unprocessed_object_names = [row[0] for row in result]
-        return unprocessed_object_names
+        return sorted(unprocessed_object_names)
 
     except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")

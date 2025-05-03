@@ -16,6 +16,8 @@ import dotenv
 logger = logging.getLogger(__name__)
 
 RA_CENTRE_TZ = pytz.utc # timestamps from RA center website are in UTC
+LOCAL_TZ = pytz.timezone('US/Pacific')
+
 ENV = os.environ.get("ENV", "dev")
 
 def get_s3_bucket():

@@ -5,13 +5,32 @@ This module is the entry point for the preprocesser application
 that reads json documents from S3 and transforms them into a 
 a relational database (star) schema.
 """
+from datetime import datetime
 from pathlib import Path
 import logging
-from src.setup import db_connect, load_env_file
+from src.setup import db_connect, load_env_file, LOCAL_TZ
 from src.upload import load_data
 
-logger = logging.getLogger("preprocessor.main")
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logger = logging.getLogger("main")
+logger.setLevel(logging.INFO)
+
+# Create console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Create a custom formatter
+class LocalTZFormatter(logging.Formatter):
+    """
+    custom logs formatter
+    """
+    def converter(self, timestamp):
+        """
+        convert timestamp to desired locale
+        """
+        db_dt = datetime.fromtimestamp(timestamp, LOCAL_TZ)
+        pst_dt = db_dt.astimezone()
+        return pst_dt.timetuple()
 
 def main(write_to_db=False):
     """"
@@ -41,4 +60,4 @@ def main(write_to_db=False):
 if __name__ == "__main__":
     # set a local variable to prod and call this main script to do manual initial
     # DB population or manual backfils
-    _ = main(True)
+    _ = main(write_to_db=True)
