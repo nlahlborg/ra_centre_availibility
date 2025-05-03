@@ -1,10 +1,9 @@
-name: web_scraper project python unit tests
-
+name: preprocessor project python unit tests
 
 on:
   pull_request:
     paths:
-      - 'web_scraper/**'
+      - 'preprocessor/**'
     branches:
       - main  # Change this to match your default branch
 
@@ -13,19 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v3
         with:
-          python-version: 3.11
+          python-version: 3.13
       - name: Install dependencies
         run: |
-          cd web_scraper
+          cd preprocessor
           python -m pip install --upgrade pip
           pip install pytest
-          pip install pytest-postgresql
+          # Add any other preprocessor-specific dependencies here
           pip install -r requirements.txt
 
       - name: Run Pytest
-        run: | 
-          cd web_scraper
+        run: |
+          cd preprocessor
           pytest --disable-warnings --maxfail 5
