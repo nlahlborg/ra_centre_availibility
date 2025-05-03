@@ -24,10 +24,8 @@ docker run -d ^
     --platform linux/amd64 ^
     --entrypoint /aws-lambda/aws-lambda-rie ^
     --name %IMAGE_NAME%^
-    --stop-timeout 60 ^
     docker-image:"%IMAGE_NAME%" ^
     /usr/local/bin/python -m awslambdaric lambda_function.handler
 
 REM test the lambda function
-TIMEOUT 5
 POWERSHELL -command "Invoke-WebRequest -Uri 'http://localhost:9002/2015-03-31/functions/function/invocations' -Method Post -Body '{\"write_to_db\": 1}' -ContentType 'application/json'"
