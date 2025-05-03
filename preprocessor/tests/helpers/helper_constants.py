@@ -113,7 +113,7 @@ PARSE_OBJECT_NAME_TEST_CONSTANT = (
     (
         "raw_centre_raw_20250426T000200Z.json", 
         "raw_centre_raw_", 
-        datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ)
+        datetime.datetime(2025, 4, 26, 0, 2, tzinfo=RA_CENTRE_TZ)
     ),
 )
 

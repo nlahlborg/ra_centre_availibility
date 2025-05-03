@@ -51,7 +51,7 @@ def parse_object_name(object_name, prefix="raw_centre_raw_"):
     try:
         date_string = object_name.split(prefix)[-1]
         date_string = date_string.split(".json")[0]
-        return datetime.strptime(date_string, "%Y%m%dT%H%M%SZ").astimezone(TZ)
+        return datetime.strptime(date_string, "%Y%m%dT%H%M%SZ").replace(tzinfo=TZ)
 
     except ValueError as e:
         logger.error(f"received incorrectly formatted object name {object_name}")
