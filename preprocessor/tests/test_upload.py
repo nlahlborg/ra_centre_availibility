@@ -3,7 +3,6 @@ tests for functions in src/upload_utils.py
 """
 #pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
 import sys
-import os
 import datetime
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
