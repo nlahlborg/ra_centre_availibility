@@ -59,13 +59,13 @@ SAMPLE_RAW_JSON = {
 
 SAMPLE_PARSED_DATA = {
     'day_of_week': 'Friday',
-    'end_time': datetime.time(13, 0, tzinfo=RA_CENTRE_TZ),
+    'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
     'facility_name': 'Badminton Court 1',
     'facility_type': 'badminton_court',
     'num_people': 1,
     'release_interval_days': 7,
     'scraped_datetime': datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
-    'start_time': datetime.time(12, 0, tzinfo=RA_CENTRE_TZ),
+    'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ),
     'week_number': 6
 }
 
@@ -81,9 +81,9 @@ SAMPLE_RESTRUCTURED_DATA = {
         },
     'timeslots': {
         'day_of_week': 'Friday',
-        'end_time': datetime.time(13, 0, tzinfo=RA_CENTRE_TZ),
+        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
         'release_interval_days': 7,
-        'start_time': datetime.time(12, 0, tzinfo=RA_CENTRE_TZ)
+        'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
         }
 }
 
@@ -194,7 +194,7 @@ GENERATE_INSERT_SQL_TEST_CONSTANT = (
             VALUES (%s, %s, %s, %s)
             RETURNING timeslot_id
         """,
-        ('Friday', datetime.time(13, 0, tzinfo=RA_CENTRE_TZ), 7, datetime.time(12, 0, tzinfo=RA_CENTRE_TZ))
+        ('Friday', datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 7, datetime.time(20, 0, tzinfo=RA_CENTRE_TZ))
     ),
     (
         SAMPLE_RESTRUCTURED_DATA["reservation_system_events"],
@@ -236,9 +236,9 @@ LOAD_TIMESLOT_TEST_CONSTANT = (
     (
         {
         'day_of_week': 'Friday',
-        'end_time': datetime.time(13, 0, tzinfo=RA_CENTRE_TZ),
+        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
         'release_interval_days': 7,
-        'start_time': datetime.time(12, 00, tzinfo=RA_CENTRE_TZ)
+        'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
         },
         1
     ),
@@ -247,9 +247,9 @@ LOAD_TIMESLOT_TEST_CONSTANT = (
     (
         {
         'day_of_week': 'Saturday',
-        'end_time': datetime.time(13, 0, tzinfo=RA_CENTRE_TZ),
+        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
         'release_interval_days': 7,
-        'start_time': datetime.time(12, 0, tzinfo=RA_CENTRE_TZ)
+        'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
         },
         2
     ),

@@ -19,7 +19,7 @@ def get_tz_aware_datetime(timestamp: int, tz=TZ) -> datetime:
     """
     converts a timestamp to timezone aware datetime
     """
-    return datetime.fromtimestamp(int(timestamp/1000)).replace(tzinfo=tz)
+    return datetime.fromtimestamp(int(timestamp/1000), tz=TZ)
 
 def get_facility_type(facility_name: str) -> str:
     """
@@ -57,7 +57,7 @@ def parse_object_name(object_name, prefix="raw_centre_raw_"):
         logger.error(f"received incorrectly formatted object name {object_name}")
         raise e
 
-def parse_data(data: str, scraped_datetime: datetime) -> dict | None:
+def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
     """
     Parses availability data from a json_object and returns a Pandas DataFrame.
 

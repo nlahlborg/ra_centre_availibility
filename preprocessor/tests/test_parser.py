@@ -35,6 +35,7 @@ def test_parse_data(data, scraped_datetime, expected):
     """
     Test that parse data creates the right data structure
     """
+    print(data)
     data, _ = parse_data(data, scraped_datetime)
 
     #have to pop the inserted_datetime from data since that results from datetime.now
