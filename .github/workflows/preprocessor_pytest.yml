@@ -17,7 +17,7 @@ jobs:
         run: docker compose -f postgresql-docker-compose.yaml pull postgresql
 
       - name: Start PostgreSQL Docker
-        run: docker compose -f postgresql-docker-compose.yaml up
+        run: docker compose -f postgresql-docker-compose.yaml up -d
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v3
