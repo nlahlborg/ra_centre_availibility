@@ -51,11 +51,10 @@ def query(
 
     return None
 
-
 def get_context_auth(text: str) -> dict | None:
     """
-    gets the payload context information by making a get request to the website and 
-    parsing the html result
+    attempt to appear less bot-ish by making a get request 
+    to the website and parsing the html result to get session specific info
     """
     regex_str = r"(?:\()({\"vf\":.*)(?:\)\);)"
     json_string = re.findall(regex_str, text)[0]

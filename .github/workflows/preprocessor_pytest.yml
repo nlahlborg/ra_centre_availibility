@@ -1,0 +1,39 @@
+name: preprocessor project python unit tests
+
+on:
+  pull_request:
+    paths:
+      - 'preprocessor/**'
+    branches:
+      - main  # Change this to match your default branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull PostgreSQL Docker Image
+        run: docker compose -f postgresql-docker-compose.yaml pull postgresql
+
+      - name: Start PostgreSQL Docker
+        run: docker compose -f postgresql-docker-compose.yaml up -d
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.13
+          
+      - name: Install Python app dependencies
+        run: |
+          cd preprocessor
+          python -m pip install --upgrade pip
+          pip install pytest
+          # Add any other preprocessor-specific dependencies here
+          pip install pytest_postgresql
+          pip install -r requirements.txt
+
+      - name: Run Pytest
+        run: |
+          cd preprocessor
+          pytest --disable-warnings --maxfail 5
