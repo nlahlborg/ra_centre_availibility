@@ -16,6 +16,11 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: 3.13
+      - name: Install Postgresql
+        run: |
+          sudo apt update
+          sudo apt install -y postgresql
+          sudo systemctl start postgresql.service
       - name: Install dependencies
         run: |
           cd preprocessor
