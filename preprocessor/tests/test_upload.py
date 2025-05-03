@@ -29,6 +29,8 @@ from tests.helpers.helper_constants import (
 
 if os.environ.get("ENV") == "github":
     postgresql_github_test = factories.postgresql_proc(
+        user='postgres',
+        password='postgres',
         port=None,
         unixsocketdir='/var/run',
         load=[
