@@ -43,7 +43,7 @@ console_handler.setFormatter(formatter)
 # Add the handlers to the logger
 logger.addHandler(console_handler)
 
-def main(write_to_db=False, override_s3_bucket=None):
+def main(write_to_db=False, override_s3_bucket=False):
     """"
     main function for the preprocessor service
 
