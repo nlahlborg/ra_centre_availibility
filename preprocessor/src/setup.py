@@ -20,17 +20,20 @@ LOCAL_TZ = pytz.timezone('US/Pacific')
 
 ENV = os.environ.get("ENV", "dev")
 
-def get_s3_bucket():
+def get_s3_bucket(override=None):
     """
     return the correct s3 bucket for prod and dev deployments
     """
-    my_env = os.environ.get("ENV", "dev")
-    if my_env == "prod":
-        s3_bucket = "ra-center-raw-data-prod"
+    if override is not None:
+        my_env = os.environ.get("ENV", "dev")
+        if my_env == "prod":
+            s3_bucket = "ra-center-raw-data-prod"
+        else:
+            s3_bucket = "ra-center-raw-data-dev"
     else:
-        s3_bucket = "ra-center-raw-data-dev"
+        s3_bucket = override
 
-    return "ra-center-raw-data-prod"
+    return s3_bucket
 
 def load_env_file(filepath):
     """Loads environment variables from a .env file.
