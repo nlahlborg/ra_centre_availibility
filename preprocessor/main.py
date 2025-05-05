@@ -13,6 +13,7 @@ from src.upload import load_data
 
 # Configure logging
 logger = logging.getLogger("main")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logger.setLevel(logging.INFO)
 
 # Create console handler
@@ -31,6 +32,12 @@ class LocalTZFormatter(logging.Formatter):
         db_dt = datetime.fromtimestamp(timestamp, LOCAL_TZ)
         pst_dt = db_dt.astimezone()
         return pst_dt.timetuple()
+
+formatter = LocalTZFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handlers to the logger
+logger.addHandler(console_handler)
 
 def main(write_to_db=False):
     """"
@@ -55,6 +62,8 @@ def main(write_to_db=False):
     if conn:
         logger.info("DB connection established.")
         retvar = load_data(conn, server, write_to_db)
+    else:
+        logger.error("No DB Connection")
     return retvar
 
 if __name__ == "__main__":

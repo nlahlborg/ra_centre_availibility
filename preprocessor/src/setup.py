@@ -30,7 +30,7 @@ def get_s3_bucket():
     else:
         s3_bucket = "ra-center-raw-data-dev"
 
-    return s3_bucket
+    return "ra-center-raw-data-prod"
 
 def load_env_file(filepath):
     """Loads environment variables from a .env file.
@@ -114,7 +114,6 @@ def db_connect():
                 connect_timeout=10,
             )
 
-            print(conn)
             server = None
 
         return server, conn

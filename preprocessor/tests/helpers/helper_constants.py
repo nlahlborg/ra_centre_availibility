@@ -110,11 +110,18 @@ GET_FACILITY_TYPE_TEST_CONSTANT = (
 )
 
 PARSE_OBJECT_NAME_TEST_CONSTANT = (
+    #no daylight savings
     (
-        "raw_centre_raw_20250426T000200Z.json", 
+        "raw_centre_raw_20250126T000200Z.json", 
         "raw_centre_raw_", 
-        datetime.datetime(2025, 4, 26, 0, 2, tzinfo=RA_CENTRE_TZ)
+        datetime.datetime(2025, 1, 26, 0, 2, 0, tzinfo=RA_CENTRE_TZ)
     ),
+    #yes daylight savings
+    (
+        "raw_centre_raw_20250502T020513Z.json", 
+        "raw_centre_raw_", 
+        datetime.datetime(2025, 5, 2, 2, 5, 13, tzinfo=RA_CENTRE_TZ)
+    )
 )
 
 PARSE_DATA_TEST_CONSTANT = (
