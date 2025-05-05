@@ -20,15 +20,30 @@ def get_object_names(
 
     try:
         client = boto3.client('s3', region_name=region_name)
-        response = client.list_objects(
-            Bucket=bucket,
-            Prefix='raw_centre_raw_'
-        )
+        all_keys_returned = False
+        object_names = []
+        max_object_names = 10000
+        marker = ""
+        idx = 0
+        while not all_keys_returned and len(object_names) < max_object_names and idx < 100:
+            idx += 1 #loop exit safety
+            response = client.list_objects(
+                Bucket=bucket,
+                MaxKeys = 1000,
+                Marker=marker,
+                Prefix='raw_centre_raw_'
+            )
+            if 'Contents' in response:
+                partial_object_names = sorted([x.get('Key') for x in response["Contents"]])
+                object_names += partial_object_names
 
-        if 'Contents' in response:
-            object_names = [x.get('Key') for x in response["Contents"]]
-        else:
-            object_names = []
+                if len(partial_object_names) < 1000:
+                    all_keys_returned = True
+                else:
+                    marker = partial_object_names[-1]
+
+            else:
+                all_keys_returned = True
 
         return sorted(object_names)
 

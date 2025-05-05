@@ -369,7 +369,7 @@ def load_single_record(data, column_map, cursor):
 
     return facility_id, timeslot_id, event_id
 
-def load_data(conn, server, write_to_db=True, override_s3_bucket=None):
+def load_data(conn, server, write_to_db=True, override_s3_bucket=False):
     """
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
