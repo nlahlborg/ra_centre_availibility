@@ -13,6 +13,11 @@ from src.upload import load_data
 
 # Configure logging
 logger = logging.getLogger("main")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+    )
 logger.setLevel(logging.INFO)
 
 # Create console handler
@@ -32,7 +37,13 @@ class LocalTZFormatter(logging.Formatter):
         pst_dt = db_dt.astimezone()
         return pst_dt.timetuple()
 
-def main(write_to_db=False):
+formatter = LocalTZFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# Add the handlers to the logger
+logger.addHandler(console_handler)
+
+def main(write_to_db=False, override_s3_bucket=None):
     """"
     main function for the preprocessor service
 
@@ -54,7 +65,9 @@ def main(write_to_db=False):
     retvar = False
     if conn:
         logger.info("DB connection established.")
-        retvar = load_data(conn, server, write_to_db)
+        retvar = load_data(conn, server, write_to_db, override_s3_bucket)
+    else:
+        logger.error("No DB Connection")
     return retvar
 
 if __name__ == "__main__":

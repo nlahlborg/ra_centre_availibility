@@ -369,14 +369,14 @@ def load_single_record(data, column_map, cursor):
 
     return facility_id, timeslot_id, event_id
 
-def load_data(conn, server, write_to_db=True):
+def load_data(conn, server, write_to_db=True, override_s3_bucket=None):
     """
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
     """
     # pylint: disable=too-many-locals, too-many-branches
     logger.info("retreiving list of available S3 objects")
-    s3_bucket = get_s3_bucket()
+    s3_bucket = get_s3_bucket(override_s3_bucket)
     objects_list = get_object_names(bucket=s3_bucket)
     new_objects_list = get_list_of_unprocessed_object_names(objects_list, conn)
 

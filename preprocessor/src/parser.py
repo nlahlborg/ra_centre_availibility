@@ -84,7 +84,6 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
             start_datetime = None
             end_datetime = None
 
-        print(start_datetime)
         data_line = {
             "facility_name": data.get("facilityName"),
             "start_time": start_datetime.timetz(),
