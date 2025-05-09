@@ -286,12 +286,12 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                     facilities_data, timeslot_data, events_data = parse_data(item, scraped_datetime)
 
                     #get the facilities id
-                    facility_id = facilities_ids_dict.get(facilities_data)
+                    facility_id = facilities_ids_dict.get(facilities_data.values())
                     if facility_id is None:
                         facility_id = load_facility(facilities_data, cursor)
 
                     #track unique timeslots:
-                    timeslot_id = timeslots_ids_dict.get(timeslot_data)
+                    timeslot_id = timeslots_ids_dict.get(timeslot_data.values())
                     if timeslot_id is None:
                         timeslot_id = load_timeslot(timeslot_data, cursor)
 
@@ -331,6 +331,8 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                 logger.exception("An unhandled exception occured")
             finally:
                 cursor.close()
+
+            break
 
         conn.close()
         if server:
