@@ -30,14 +30,25 @@ def test_parse_object_name(object_name, prefix, expected):
 
     assert datetime_value == expected
 
-@pytest.mark.parametrize("data,scraped_datetime,expected", PARSE_DATA_TEST_CONSTANT)
-def test_parse_data(data, scraped_datetime, expected):
+@pytest.mark.parametrize(
+        "data,scraped_datetime,expected_facility_data,expected_timeslot_data,expected_event_data", 
+        PARSE_DATA_TEST_CONSTANT
+        )
+def test_parse_data(
+    data, 
+    scraped_datetime, 
+    expected_facility_data, 
+    expected_timeslot_data, 
+    expected_event_data
+    ):
     """
     Test that parse data creates the right data structure
     """
-    data, _ = parse_data(data, scraped_datetime)
+    facility_data, timeslot_data, event_data = parse_data(data, scraped_datetime)
 
     #have to pop the inserted_datetime from data since that results from datetime.now
-    _ = data.pop("inserted_datetime")
+    _ = event_data.pop("inserted_datetime")
 
-    assert data == expected
+    assert facility_data == expected_facility_data
+    assert timeslot_data == expected_timeslot_data
+    assert event_data == expected_event_data

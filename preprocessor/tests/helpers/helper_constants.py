@@ -69,6 +69,25 @@ SAMPLE_PARSED_DATA = {
     'week_number': 6
 }
 
+SAMPLE_FACILITIES_DATA = {
+    'facility_name': 'Badminton Court 1',
+    'facility_type': 'badminton_court'
+}
+
+SAMPLE_TIMESLOT_DATA = {
+    'day_of_week': 'Friday',
+    'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+    'release_interval_days': 7,
+    'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
+}
+
+SAMPLE_EVENTS_DATA = {
+    'num_people': 1,
+    'scraped_datetime': datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
+    'week_number': 6,
+}
+
+
 SAMPLE_RESTRUCTURED_DATA = {
     'facilities': {
         'facility_name': 'Badminton Court 1',
@@ -86,21 +105,6 @@ SAMPLE_RESTRUCTURED_DATA = {
         'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
         }
 }
-
-COLUMN_MAP = {
-    'day_of_week': 'timeslots',
-    'end_time': 'timeslots',
-    'facility_id': 'reservation_system_events',
-    'facility_name': 'facilities',
-    'facility_type': 'facilities',
-    'inserted_datetime': 'reservation_system_events',
-    'num_people': 'reservation_system_events',
-    'release_interval_days': 'timeslots',
-    'scraped_datetime': 'reservation_system_events',
-    'start_time': 'timeslots',
-    'timeslot_id': 'reservation_system_events',
-    'week_number': 'reservation_system_events'
-    }
 
 GET_FACILITY_TYPE_TEST_CONSTANT = (
     ("Squash Court 5", "squash_court"),
@@ -128,7 +132,9 @@ PARSE_DATA_TEST_CONSTANT = (
     (
         SAMPLE_RAW_JSON,
         datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
-        SAMPLE_PARSED_DATA
+        SAMPLE_FACILITIES_DATA,
+        SAMPLE_TIMESLOT_DATA,
+        SAMPLE_EVENTS_DATA
     ),
 )
 
@@ -175,14 +181,10 @@ GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT = (
     ),
 )
 
-RESTRUCTURE_DATA_FOR_TABLES_TEST_CONSTANT = (
-    (SAMPLE_PARSED_DATA, SAMPLE_RESTRUCTURED_DATA),
-)
-
 #data, id_col_name, table_name, expected_sql, expected_values
 GENERATE_INSERT_SQL_TEST_CONSTANT = (
     (
-        SAMPLE_RESTRUCTURED_DATA["facilities"],
+        SAMPLE_FACILITIES_DATA,
         "facility_id",
         "facilities",
         """
@@ -193,7 +195,7 @@ GENERATE_INSERT_SQL_TEST_CONSTANT = (
         ('Badminton Court 1', 'badminton_court')
     ),
     (
-        SAMPLE_RESTRUCTURED_DATA["timeslots"],
+        SAMPLE_TIMESLOT_DATA,
         "timeslot_id",
         "timeslots",
         """
@@ -202,17 +204,19 @@ GENERATE_INSERT_SQL_TEST_CONSTANT = (
             RETURNING timeslot_id
         """,
         ('Friday', datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 7, datetime.time(20, 0, tzinfo=RA_CENTRE_TZ))
-    ),
+    )
+)
+
+GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT = (
     (
-        SAMPLE_RESTRUCTURED_DATA["reservation_system_events"],
-        "event_id",
+        [SAMPLE_EVENTS_DATA.copy(), SAMPLE_EVENTS_DATA.copy()],
         "reservation_system_events",
-        """
-            INSERT INTO source.reservation_system_events (num_people, scraped_datetime, week_number)
-            VALUES (%s, %s, %s)
-            RETURNING event_id
-        """,
-        (1, datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ), 6)
+        '''INSERT INTO "source"."reservation_system_events" ("num_people", "scraped_datetime", "week_number")
+            VALUES (%s, %s, %s)''',
+        [
+            (1, datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ), 6),
+            (1, datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ), 6)
+        ]
     ),
 )
 
@@ -263,49 +267,26 @@ LOAD_TIMESLOT_TEST_CONSTANT = (
 )
 
 #(data in, facility_id, timeslot_id, id out)
-LOAD_SLOT_EVENT_TEST_CONSTANT = (
+LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
     #slot event exactly matches existing record, with scraped_datetime greater than previous
     (
-       {
-        'num_people': 1,
-        'scraped_datetime': datetime.datetime(2026, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-        'week_number': 6
-        },
-        1,
-        1,
-        1
+        [
+            {
+                'num_people': 1,
+                'scraped_datetime': datetime.datetime(2026, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
+                'week_number': 6,
+                'facility_id': 1,
+                'timeslot_id': 1
+            },
+            {
+                'num_people': 0,
+                'scraped_datetime': datetime.datetime(2026, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
+                'week_number': 6,
+                'facility_id': 1,
+                'timeslot_id': 1
+            }
+        ],
+        [1, 2]
     ),
     #slot event exactly matches existing record except num_people, with scraped_datetime greater than previous
-    (
-       {
-        'num_people': 0,
-        'scraped_datetime': datetime.datetime(2026, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-        'week_number': 6
-        },
-        1,
-        1,
-        2
-    ),
-    #slot event is for a timeslot_id that is new but otherwise the same
-    (
-       {
-        'num_people': 1,
-        'scraped_datetime': datetime.datetime(2026, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-        'week_number': 6
-        },
-        1,
-        2,
-        2
-    ),
-    #slot event is for a week that is new but otherwise the same
-    (
-       {
-        'num_people': 1,
-        'scraped_datetime': datetime.datetime(2026, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-        'week_number': 7
-        },
-        1,
-        1,
-        2
-    )
 )

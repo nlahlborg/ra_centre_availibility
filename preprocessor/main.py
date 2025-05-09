@@ -43,14 +43,14 @@ console_handler.setFormatter(formatter)
 # Add the handlers to the logger
 logger.addHandler(console_handler)
 
-def main(write_to_db=False, override_s3_bucket=False):
+def main(dry_run=True, override_s3_bucket=False):
     """"
     main function for the preprocessor service
 
     Args:
-        write_to_db: bool
-            Set this to false when performing integration testing on production
-            Set this to true all other times in order to write to DB
+        dry_run: bool
+            Set this to True when performing integration testing on production
+            Set this to False all other times in order to write to DB
     
     Returns:
         List of ids corresponding to data that was uploaded to the Postgresql DB,
@@ -65,7 +65,7 @@ def main(write_to_db=False, override_s3_bucket=False):
     retvar = False
     if conn:
         logger.info("DB connection established.")
-        retvar = load_data(conn, server, write_to_db, override_s3_bucket)
+        retvar = load_data(conn, server, dry_run, override_s3_bucket)
     else:
         logger.error("No DB Connection")
     return retvar
@@ -73,4 +73,4 @@ def main(write_to_db=False, override_s3_bucket=False):
 if __name__ == "__main__":
     # set a local variable to prod and call this main script to do manual initial
     # DB population or manual backfils
-    _ = main(write_to_db=True, override_s3_bucket="ra-center-raw-data-prod")
+    _ = main(dry_run=False, override_s3_bucket="ra-center-raw-data-prod")

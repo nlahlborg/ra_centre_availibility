@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
-def get_object_names(
+def get_s3_object_names(
         bucket,
         region_name: str='us-west-1'
         ):
@@ -51,7 +51,7 @@ def get_object_names(
         logger.error(f"Error reading from S3: {e}")
         return []
 
-def get_json_data(bucket, object_name, region_name: str='us-west-1'):
+def get_s3_json_data(bucket, object_name, region_name: str='us-west-1'):
     """
     get the specified object from s3
     """
@@ -73,3 +73,96 @@ def get_json_data(bucket, object_name, region_name: str='us-west-1'):
     except JSONDecodeError as e:
         logger.exception(f"Error decoding json: {e}")
         return None
+
+def get_sql_facilities_table(conn, schema="source"):
+    """
+    fetch the facility SQL table
+    """
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        SELECT
+            facility_id,
+            facility_name,
+            facility_type
+        FROM "{schema}".facilities
+    """) 
+    data = cursor.fetchall()
+    cursor.close()
+
+    return data
+
+def get_sql_timeslots_table(conn, schema="source"):
+    """
+    fetch the facility SQL table
+    """
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        SELECT
+            timeslot_id,
+            start_time,
+            end_time,
+            day_of_week,
+            release_interval_days
+        FROM "{schema}".timeslots
+    """) 
+    data = cursor.fetchall()
+    cursor.close()
+
+    return data
+
+def get_sql_registration_system_events_table(conn, min_start_datetime=None, schema="source"):
+    """
+    fetch the most recent event for each facility and timeslot combination
+    """
+    cursor = conn.cursor()
+    
+    if min_start_datetime is None:
+        sql = f"""
+            SELECT DISTINCT ON(facility_id, timeslot_id, week_number)
+                event_id,
+                num_people,
+                week_number,
+                facility_id,
+                timeslot_id
+            FROM "{schema}".reservation_system_events
+            ORDER BY facility_id, timeslot_id, week_number, scraped_datetime DESC
+        """
+    else:
+        sql = f"""
+            WITH get_start_datetime AS (
+            SELECT
+                *,
+                ('Jan 1 ' || EXTRACT(YEAR FROM scraped_datetime)::text || ' ' || start_time::text)::timestamptz
+                    - (EXTRACT(DOW FROM (('Jan 1 ') || EXTRACT(YEAR FROM scraped_datetime)::text)::date)::text || ' days')::interval
+                    + (((week_number-1)*7)::text || ' days')::interval
+                    - (CASE
+                        WHEN day_of_week = 'Sunday' THEN 0
+                        WHEN day_of_week = 'Monday' THEN 1
+                        WHEN day_of_week = 'Tuesday' THEN 2
+                        WHEN day_of_week = 'Wednesday' THEN 3
+                        WHEN day_of_week = 'Thursday' THEN 4
+                        WHEN day_of_week = 'Friday' THEN 5
+                        WHEN day_of_week = 'Saturday' THEN 6
+                        END::text || ' days')::interval
+                    AS start_datetime
+            FROM "{schema}".reservation_system_events
+            INNER JOIN "{schema}".timeslots 
+                USING(timeslot_id)
+            )
+            
+            SELECT DISTINCT ON(facility_id, timeslot_id, week_number)
+                event_id,
+                num_people,
+                week_number,
+                facility_id,
+                timeslot_id
+            FROM get_start_datetime
+            WHERE start_datetime >= ({min_start_datetime} - '7 days'::interval)
+            ORDER BY facility_id, timeslot_id, week_number, scraped_datetime DESC
+        """
+
+    cursor.execute(sql) 
+    data = cursor.fetchall()
+    cursor.close()
+
+    return data
