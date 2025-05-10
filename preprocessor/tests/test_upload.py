@@ -1,7 +1,7 @@
 """
 tests for functions in src/upload_utils.py
 """
-#pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
+#pylint: disable=wrong-import-position, line-too-long, redefined-outer-name
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
