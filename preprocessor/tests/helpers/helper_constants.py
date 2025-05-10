@@ -242,14 +242,14 @@ LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     #timeslot already matches existing id = 1
     (
         {
-            'day_of_week': 'Friday',
+            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ),
             'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+            'day_of_week': 'Friday',
             'release_interval_days': 7,
-            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
         },
         {
             (
-                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ), 
+                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ),
                 datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
                 "Friday",
                 7
@@ -263,14 +263,14 @@ LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     #timeslot doesn't matches existing id = 1
     (
         {
-            'day_of_week': 'Saturday',
+            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ),
             'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+            'day_of_week': 'Saturday',
             'release_interval_days': 7,
-            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
         },
         {
             (
-                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ), 
+                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ),
                 datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
                 "Friday",
                 7

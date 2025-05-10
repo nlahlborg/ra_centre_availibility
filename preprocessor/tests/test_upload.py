@@ -70,10 +70,11 @@ def test_generate_insert_sql_batch(data_list, table_name, expected_sql, expected
     assert values == expected_values
 
 @pytest.mark.parametrize("data,ids_dict,table_name,id_col_name,schema,expected", LOAD_NEW_SINGLE_DATA_TEST_CONSTANT)
-def load_new_single_data(conn_fixture, data, ids_dict, table_name, id_col_name, schema, expected):
+def test_load_new_single_data(conn_fixture, data, ids_dict, table_name, id_col_name, schema, expected):
     """
     Test facility data load
     """
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     cursor = conn_fixture.cursor()
     result = load_new_single_data(
         data=data,

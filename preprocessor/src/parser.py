@@ -88,12 +88,13 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
             "facility_name": data.get("facilityName"),
             "facility_type": get_facility_type(data.get("facilityName")),
             }
-        
-        timeslot_data = {            
+
+        timeslot_data = {
             "start_time": start_datetime.timetz(),
             "end_time": end_datetime.timetz(),
             "day_of_week": start_datetime.strftime("%A"),
-            "release_interval_days": (start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
+            "release_interval_days": (
+                start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
         }
 
         event_data = {
@@ -104,7 +105,7 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
         }
 
         return facilities_data, timeslot_data, event_data
-        
+
     except (ValueError, TypeError, KeyError) as e:
         logger.warning(f"Error processing item: {data.get('name')}. Error: {e}") #pylint: disable=logging-fstring-interpolation
         return None, None, None

@@ -42,7 +42,8 @@ logger.addHandler(console_handler)
 
 #if we're running locally create a file handler
 if LOG_TO_FILE:
-    file_handler = logging.FileHandler(filename=(Path(__file__).parent / "logs" / "log.log"), mode='w')
+    file_handler = logging.FileHandler(
+        filename=(Path(__file__).parent / "logs" / "log.log"), mode='w')
     file_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)

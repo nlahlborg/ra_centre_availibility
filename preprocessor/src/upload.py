@@ -69,7 +69,7 @@ def get_list_of_unprocessed_object_names(
     except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")
         ret_val = []
-    except Exception as e:
+    except Exception:
         logger.exception("An unhandled exception occured in reading from helper table")
         ret_val = []
 
@@ -97,9 +97,9 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
     first_row = data_list[0]
     columns = list(first_row.keys())
     placeholders = ', '.join(['%s'] * len(columns))
-    qualified_table_name = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table_name))
+    table_id = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table_name))
     stmt = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
-        qualified_table_name,
+        table_id,
         sql.SQL(', ').join(map(sql.Identifier, columns)),
         sql.SQL(placeholders)
     )
@@ -189,10 +189,11 @@ def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema
     wrapper for load_facility. Determines if the data is already in the db 
     and if not then uploads
     """
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     #get the facilities id
     #logger.info(f"getting {id_col_name} if it exists")
     idn = ids_dict.get(tuple(data.values()))
-    if idn is None:                        
+    if idn is None:
         #logger.info(f"uploading a new record to {table_name}:\n{data.values()}")
         idn = load_single_data(data, table_name, id_col_name, cursor, schema)
         ids_dict[tuple(data.values())] = idn
@@ -205,7 +206,7 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
     """
-    # pylint: disable=too-many-locals, too-many-branches
+    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements
     inserted_datetime = datetime.now(tz=TZ)
     logger.info("retreiving list of available S3 objects")
     s3_bucket = get_s3_bucket(override_s3_bucket)
@@ -267,9 +268,9 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                     events_data["timeslot_id"] = timeslot_id
                     events_data["inserted_datetime"] = inserted_datetime
                     events_data_key = (
-                        events_data.get("num_people"), 
+                        events_data.get("num_people"),
                         events_data.get("week_number"),
-                        events_data.get("facility_id"), 
+                        events_data.get("facility_id"),
                         events_data.get("timeslot_id"),
                     )
                     if events_data_key not in events_table_ids_dict:
@@ -280,7 +281,7 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                     logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
                     load_slot_events_batch(events_data_list, cursor)
                 else:
-                    logger.info(f"There is no new data to add from this batch.")
+                    logger.info("There is no new data to add from this batch.")
                 logger.info("upating the helper table")
                 _ = load_helper_data(object_name, cursor)
 
@@ -288,8 +289,8 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                 if dry_run:
                     conn.rollback()
                     logger.info(f"DRY RUN: did not commit data for {object_name}")
-                else:                    
-                    logger.info(f"committing batch")
+                else:
+                    logger.info("committing batch")
                     conn.commit()
                     logger.info(f"uploaded data for {object_name}")
 

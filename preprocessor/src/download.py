@@ -85,7 +85,7 @@ def get_sql_facilities_table(conn, schema="source"):
             facility_name,
             facility_type
         FROM "{schema}".facilities
-    """) 
+    """)
     data = cursor.fetchall()
     cursor.close()
 
@@ -104,7 +104,7 @@ def get_sql_timeslots_table(conn, schema="source"):
             day_of_week,
             release_interval_days
         FROM "{schema}".timeslots
-    """) 
+    """)
     data = cursor.fetchall()
     cursor.close()
 
@@ -115,7 +115,7 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
     fetch the most recent event for each facility and timeslot combination
     """
     cursor = conn.cursor()
-    
+
     if min_start_datetime is None:
         sql = f"""
             SELECT DISTINCT ON(facility_id, timeslot_id, week_number)
@@ -146,7 +146,7 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
                         END::text || ' days')::interval
                     AS start_datetime
             FROM "{schema}".reservation_system_events
-            INNER JOIN "{schema}".timeslots 
+            INNER JOIN "{schema}".timeslots
                 USING(timeslot_id)
             )
             
@@ -161,17 +161,31 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
             ORDER BY facility_id, timeslot_id, week_number, scraped_datetime DESC
         """
 
-    cursor.execute(sql) 
+    cursor.execute(sql)
     data = cursor.fetchall()
     cursor.close()
 
     return data
 
 def get_facilities_ids_dict(conn, schema="source"):
+    """
+    wrapper for get_sql_facilities_table
+    returns a dictionary of unique table values
+    """
+
     return {tuple(row[1:]): row[0] for row in get_sql_facilities_table(conn, schema)}
 
 def get_timeslots_ids_dict(conn, schema="source"):
+    """
+    wrapper for get_sql_timeslots_table
+    returns a dictionary of unique table values
+    """
     return {tuple(row[1:]): row[0] for row in get_sql_timeslots_table(conn, schema)}
 
 def get_registration_system_events_ids_dict(conn, min_start_datetime=None, schema="source"):
-    return {tuple(row[1:]): row[0] for row in get_sql_registration_system_events_table(conn, min_start_datetime, schema)}
+    """
+    wrapper for get_sql_registration_system_events_table
+    returns a dictionary of unique table values
+    """
+    table = get_sql_registration_system_events_table(conn, min_start_datetime, schema)
+    return {tuple(row[1:]): row[0] for row in table}

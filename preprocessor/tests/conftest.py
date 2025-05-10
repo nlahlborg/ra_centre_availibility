@@ -2,7 +2,6 @@
 start mock dbs for all tests
 """
 from pathlib import Path
-import pytest
 from pytest_postgresql import factories
 
 postgresql_local_dev = factories.postgresql_noproc(

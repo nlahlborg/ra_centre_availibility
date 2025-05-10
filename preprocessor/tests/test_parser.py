@@ -35,10 +35,10 @@ def test_parse_object_name(object_name, prefix, expected):
         PARSE_DATA_TEST_CONSTANT
         )
 def test_parse_data(
-    data, 
-    scraped_datetime, 
-    expected_facility_data, 
-    expected_timeslot_data, 
+    data,
+    scraped_datetime,
+    expected_facility_data,
+    expected_timeslot_data,
     expected_event_data
     ):
     """

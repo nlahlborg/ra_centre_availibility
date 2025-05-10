@@ -54,7 +54,7 @@ def test_get_sql_registration_system_events_table_stale_starttimes(conn_fixture)
     Test get_list_of_unprocessed_object_names
     """
     result = get_sql_registration_system_events_table(
-        conn=conn_fixture, 
+        conn=conn_fixture,
         min_start_datetime=datetime.now() #just something newer than the sample data
         )
     expected = []
