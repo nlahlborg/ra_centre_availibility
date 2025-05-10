@@ -1,10 +1,10 @@
 """
 start mock dbs for all tests
 """
+#pylint: disable=import-error
 from pathlib import Path
 from pytest_postgresql import factories
 
-#pylint: disable=import-error
 postgresql_local_dev = factories.postgresql_noproc(
     user='postgres',
     password='postgres',
