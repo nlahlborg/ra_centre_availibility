@@ -40,11 +40,11 @@ def handler(event, context):
         dict: The response object.
     """
     # pylint: disable=unused-argument, logging-fstring-interpolation, import-outside-toplevel
-    _, write_to_db = next(iter(event.items()))
+    _, dry_run = next(iter(event.items()))
     logger.info(f"Received event: {event}")
     from main import main
     logger.info("preparing to run main")
-    rdb_response = main(write_to_db=write_to_db)
+    rdb_response = main(dry_run=dry_run)
 
     # Your logic here
     response = {

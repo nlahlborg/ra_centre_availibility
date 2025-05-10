@@ -37,4 +37,4 @@ docker run -d ^
 
 REM test the lambda function
 TIMEOUT 5
-POWERSHELL -command "Invoke-WebRequest -Uri 'http://localhost:9001/2015-03-31/functions/function/invocations' -Method Post -Body '{\"write_to_db\": 1}' -ContentType 'application/json'"
+POWERSHELL -command "Invoke-WebRequest -Uri 'http://localhost:9001/2015-03-31/functions/function/invocations' -Method Post -Body '{\"dry_run\": 0}' -ContentType 'application/json'"

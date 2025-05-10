@@ -6,10 +6,12 @@ from datetime import datetime
 import logging
 
 import psycopg
+from psycopg import sql
 
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
-from src.download import get_object_names, get_json_data
+from src.download import (get_s3_object_names, get_s3_json_data,
+    get_facilities_ids_dict, get_timeslots_ids_dict, get_registration_system_events_ids_dict)
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,6 @@ def get_list_of_unprocessed_object_names(
     newer than the most recent object.
     """
     try:
-
         # pylint: disable=line-too-long
         placeholder = ", ".join([f"('{x}', '{parse_object_name(x).strftime('%Y-%m-%d %H:%M:%S%z')}'::timestamptz)" for x in object_names])
 
@@ -63,97 +64,16 @@ def get_list_of_unprocessed_object_names(
         cursor.execute(query)
         result = cursor.fetchall()
         unprocessed_object_names = [row[0] for row in result]
-        return sorted(unprocessed_object_names)
+        ret_val = sorted(unprocessed_object_names)
 
     except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")
-        return []
+        ret_val = []
     except Exception:
-        logger.exception("An unhandled exception occured")
-        return []
+        logger.exception("An unhandled exception occured in reading from helper table")
+        ret_val = []
 
-def get_table_column_mapping(conn, schema="source"):
-    """
-    Returns:
-        column_map: A dictionary that maps column names to their tables.
-            Example:
-            {
-                'table1_col1': 'table1',
-                'table1_col2': 'table1',
-                'table2_col1': 'table2'
-            }
-    """
-    query = f"""
-        SELECT
-            table_name,
-            column_name
-        FROM
-            information_schema.columns
-        WHERE table_schema = '{schema}'
-            AND (CAST(dtd_identifier AS INT) > 1)
-        ORDER BY table_name, column_name
-    """
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute(query)
-
-        results = cursor.fetchall()
-
-        column_map = {}
-        for table_name, column_name in results:
-            if column_name not in column_map:
-                column_map[column_name] = table_name
-
-        return column_map
-
-    except psycopg.Error as e:
-        logger.error(f"Error reading from Postgres {e}")
-        return []
-    except Exception:
-        logger.exception("An unhandled exception occured")
-        return []
-
-def restructure_data_for_tables(data, column_map):
-    """
-    Restructures the parsed data into a dictionary where keys are table names
-    and values are lists of dictionaries, each representing a row for that table.
-
-    Args:
-        data: A list of dictionaries, where each dictionary is a flat
-            key-value store containing data for one or more tables.
-            Example:
-            {'table1_col1': 'value1', 'table1_col2': 'value2', 'table2_colA': 'dataA'},
-        column_map: A dictionary that maps table names to their column prefixes.
-            This is crucial for determining which columns belong to which table.
-            Example:
-            {
-                'table1_col1': 'table1',
-                'table1_col2': 'table1',
-                'table2_col1': 'table2'
-            }
-    Returns:
-        A dictionary where keys are table names and values are dictionaries
-        ready to be loaded to their appropriate tables
-        Example:
-        {
-            'table1': {'col1': 'value1', 'col2': 'value2'},
-            'table2': {'colA': 'dataA', 'colB': 'dataB', 'colC': 'dataC'},
-            'table3': {'fieldX': 123, 'fieldY': 'abc'}
-        }
-    """
-    #initialize outvar
-    ret_var = {}
-    for table_name in list(set(column_map.values())):
-        ret_var[table_name] = {}
-
-    #iterate through flat key value store
-    for col_name, value in data.items():
-        table_name = column_map.get(col_name)  # Get table name from mapping
-        if table_name is not None:
-            ret_var[table_name].update({col_name: value})
-
-    return ret_var
+    return ret_val
 
 def generate_insert_sql(data, id_col_name, table_name, schema="source"):
     """
@@ -162,163 +82,56 @@ def generate_insert_sql(data, id_col_name, table_name, schema="source"):
     keys = "(" + ", ".join(list(data.keys())) + ")"
     values = tuple(data.values())
     values_spec_str = "(" + ", ".join(["%s" for _ in range(len(values))]) + ")"
-    sql = f"""
+    stmt = f"""
         INSERT INTO {schema}.{table_name} {keys}
         VALUES {values_spec_str}
         RETURNING {id_col_name}
     """
 
-    return sql, values
+    return stmt, values
 
-def load_facility(data, cursor, schema="source"):
+def generate_insert_sql_batch(data_list, table_name, schema="source"):
     """
-    Loads facility data into the facilities table, checking for duplicates.
-
-    Args:
-        data: A list of dictionaries containing facility attributes
-            (e.g., [{'facility_name': 'Badminton Court 1', 'facility_type': 'badminton_court'}]).
-        cursor: PostgreSQL database cursor object.
-        schema: schema to upload to
-
-    Returns:
-        the facility_id
+    generalize method for generating insert into DDL
     """
-    table_id = None
-    # Check if the facility already exists based on its name
-    query = f"""
-        SELECT facility_id
-        FROM {schema}.facilities
-        WHERE facility_name = '{data['facility_name']}'"""
-    cursor.execute(query)
-    existing_facility = cursor.fetchone()
+    first_row = data_list[0]
+    columns = list(first_row.keys())
+    placeholders = ', '.join(['%s'] * len(columns))
+    table_id = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table_name))
+    stmt = sql.SQL("INSERT INTO {} ({}) VALUES ({})").format(
+        table_id,
+        sql.SQL(', ').join(map(sql.Identifier, columns)),
+        sql.SQL(placeholders)
+    )
 
-    if existing_facility:
-        # Facility already exists, return its ID
-        table_id = existing_facility[0]
-        logger.debug(f"Facility '{data['facility_name']}' already exists with ID: {table_id}")
-    else:
-        # Facility does not exist, insert it, and get the generated ID
-        sql, values = generate_insert_sql(
-            data,
-            id_col_name="facility_id",
-            table_name="facilities",
-            schema=schema)
-        cursor.execute(sql, values)
-        table_id = cursor.fetchone()[0]  # Get the generated ID
+    values = [tuple(row[col] for col in columns) for row in data_list]
 
-    return table_id
+    return stmt, values
 
-def load_timeslot(data, cursor, schema="source"):
-    """
-    Loads timeslots data into the timeslots table, checking for duplicates.
-
-    Args:
-        data: A list of dictionaries containing timeslot attribuites
-        cursor: PostgreSQL database cursor object.
-        schema: schema to upload to
-
-    Returns:
-        the timeslot id
-    """
-
-    table_id = None
-    # Check if the timeslot already exists based on its name
-    query = f"""
-        SELECT timeslot_id
-        FROM {schema}.timeslots
-        WHERE 
-            start_time = '{data['start_time']}'
-            AND end_time = '{data['end_time']}'
-            AND day_of_week = '{data['day_of_week']}'
-            AND release_interval_days = '{data['release_interval_days']}'
-    """
-    cursor.execute(query)
-    existing_facility = cursor.fetchone()
-
-    if existing_facility:
-        # Facility already exists, return its table_id
-        table_id = existing_facility[0]
-        logger.debug(f"Timeslot '{data}' already exists with table_id: {table_id}")
-    else:
-        # Facility does not exist, insert it, and get the generated table_id
-        sql, values = generate_insert_sql(
-            data,
-            id_col_name="timeslot_id",
-            table_name="timeslots",
-            schema=schema)
-        cursor.execute(sql, values)
-        table_id = cursor.fetchone()[0]  # Get the generated ID
-
-    return table_id
-
-def load_slot_event(data,
-    facility_id,
-    timeslot_id,
-    cursor,
-    schema="source"):
+def load_slot_events_batch(data_list, cursor, schema="source"):
     """
     Loads registration events data into the registration_slot_events table, 
-    checking for duplicates.
 
     Args:
         data: A list of dictionaries containing timeslot attribuites
-        facility_id: the facilities table foreign key
-        timeslot_id: the timeslots table foreign key
         cursor: PostgreSQL database cursor object.
         schema: schema to upload to
 
     Returns:
         the event_id
     """
-
-    table_id = None
-    #get the most recent record matching facility and timeslot
-    query = f"""
-        SELECT event_id, num_people, scraped_datetime
-        FROM {schema}.reservation_system_events
-        WHERE 
-            facility_id = {facility_id}
-            AND timeslot_id = {timeslot_id}
-            AND week_number = {data["week_number"]}
-        ORDER BY scraped_datetime DESC
-        LIMIT 1
-    """
-    cursor.execute(query)
-    existing_slot_event = cursor.fetchone()
-
-    if existing_slot_event:
-        if existing_slot_event[2] >= data["scraped_datetime"]:
-            raise ValueError(
-                "Scraped Datetime must be greater than most recent previous matching record"
-                )
-        if existing_slot_event[1] == data["num_people"]:
-            # if the number of people is the same as the previous most recent record,
-            # then this is a duplicate so don't insert it
-            table_id = existing_slot_event[0]
-            to_insert = False
-            logger.debug(f"slot_event '{data}' already exists with ID: {table_id}")
-        else:
-            # if the number of people has changed since the previous most recent record,
-            # then something has happened! Store this updated record and get the generated table_id
-            to_insert = True
-    else:
-        # if the record doesn't exist then we should create a brand new one
-        to_insert = True
-
-    if to_insert:
+    try:
         #insert raw data
-        data["inserted_datetime"] =  datetime.now(tz=TZ)
-        data["facility_id"] = facility_id
-        data["timeslot_id"] = timeslot_id
-        sql, values = generate_insert_sql(
-            data,
-            id_col_name="event_id",
+        stmt, values = generate_insert_sql_batch(
+            data_list,
             table_name="reservation_system_events",
             schema=schema)
-        cursor.execute(sql, values)
-        table_id = cursor.fetchone()[0]  # Get the generated ID
+        cursor.executemany(stmt, values)
 
-    return table_id
+        return True
+    except psycopg.Error as e:
+        logger.exception(e)
+        return False
 
 def load_helper_data(object_name, cursor, schema="helper"):
     """
@@ -340,44 +153,64 @@ def load_helper_data(object_name, cursor, schema="helper"):
         "scraped_datetime": parse_object_name(object_name),
         "inserted_datetime":  datetime.now(tz=TZ)
     }
-    sql, values = generate_insert_sql(
+    stmt, values = generate_insert_sql(
         helper_data,
         id_col_name="object_name",
         table_name="helper_loaded_objects",
         schema=schema)
-    object_name = cursor.execute(sql, values)
+    object_name = cursor.execute(stmt, values)
 
     return object_name
 
-def load_single_record(data, column_map, cursor):
+def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
     """
-    logic for loading a single record
+    wrapper for generate_insert_sql and cursor.fetchone to insert 
+    data and get the id of the inserted row
+
+    Args:
+        data: A list of dictionaries containing attributes
+            (e.g., [{'facility_name': 'Badminton Court 1', 'facility_type': 'badminton_court'}]).
+        table_name: name of the target table
+        id_col_name: name of the id column to return
+        cursor: PostgreSQL database cursor object.
+        schema: schema to upload to
+
+    Returns:
+        the table_id
     """
-    #initialize data structure
-    structured_data = restructure_data_for_tables(data, column_map)
+    stmt, values = generate_insert_sql(data, id_col_name, table_name, schema)
+    cursor.execute(stmt, values)
+    table_id = cursor.fetchone()[0]  # Get the generated ID
 
-    logger.debug("loading facilities data")
-    facility_id = load_facility(structured_data["facilities"], cursor)
-    logger.debug("loading timeslots data")
-    timeslot_id = load_timeslot(structured_data["timeslots"], cursor)
-    logger.debug("loading reservation_system_events data")
-    event_id = load_slot_event(
-        data=structured_data["reservation_system_events"],
-        facility_id=facility_id,
-        timeslot_id=timeslot_id,
-        cursor=cursor)
+    return table_id
 
-    return facility_id, timeslot_id, event_id
+def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema):
+    """
+    wrapper for load_facility. Determines if the data is already in the db 
+    and if not then uploads
+    """
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    #get the facilities id
+    #logger.info(f"getting {id_col_name} if it exists")
+    idn = ids_dict.get(tuple(data.values()))
+    if idn is None:
+        #logger.info(f"uploading a new record to {table_name}:\n{data.values()}")
+        idn = load_single_data(data, table_name, id_col_name, cursor, schema)
+        ids_dict[tuple(data.values())] = idn
+        #logger.info(f"The new id is {ids_dict[tuple(data.values())]}")
 
-def load_data(conn, server, write_to_db=True, override_s3_bucket=False):
+    return idn
+
+def load_data(conn, server, dry_run=False, override_s3_bucket=False):
     """
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
     """
-    # pylint: disable=too-many-locals, too-many-branches
+    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements
+    inserted_datetime = datetime.now(tz=TZ)
     logger.info("retreiving list of available S3 objects")
     s3_bucket = get_s3_bucket(override_s3_bucket)
-    objects_list = get_object_names(bucket=s3_bucket)
+    objects_list = get_s3_object_names(bucket=s3_bucket)
     new_objects_list = get_list_of_unprocessed_object_names(objects_list, conn)
 
     if new_objects_list:
@@ -389,32 +222,77 @@ def load_data(conn, server, write_to_db=True, override_s3_bucket=False):
         logger.info("No new objects found. Will shut down.")
     try:
         for object_name in new_objects_list:
+            # get the raw data from s3
             logger.info(f"processing object {object_name}")
             scraped_datetime = parse_object_name(object_name=object_name)
-
-            #for each object in the list, check to see if it's already in the db
             logger.info("retreiving single s3 object")
-            data = get_json_data(bucket=s3_bucket, object_name=object_name)
+            data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
 
-            data_map = get_table_column_mapping(conn)
-            ids_list = []
+            # load the existing tables from the db to compare in memory
+            logger.info("loading db subsets")
+            facilities_ids_dict = get_facilities_ids_dict(conn)
+            timeslots_ids_dict = get_timeslots_ids_dict(conn)
+            events_table_ids_dict = get_registration_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
 
+            # parse the raw data and store in memory
+            logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
+            cursor = conn.cursor()
+            events_data_list = []
             try:
-                #do some simple preprocessing of raw data and upload if requested
-                logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
-                cursor = conn.cursor()
                 for item in data:
-                    data_line, scraped_datetime = parse_data(item, scraped_datetime)
+                    # first parse the data
+                    #logger.info("parsing single line of data")
+                    facilities_data, timeslots_data, events_data = parse_data(item, scraped_datetime)
 
-                    if write_to_db:
-                        ids = load_single_record(data_line, data_map, cursor)
-                        ids_list.append(ids)
+                    facility_id = load_new_single_data(
+                        data=facilities_data,
+                        ids_dict=facilities_ids_dict,
+                        table_name="facilities",
+                        id_col_name="facility_id",
+                        schema="source",
+                        cursor=cursor
+                    )
+
+                    timeslot_id = load_new_single_data(
+                        data=timeslots_data,
+                        ids_dict=timeslots_ids_dict,
+                        table_name="timeslots",
+                        id_col_name="timeslot_id",
+                        schema="source",
+                        cursor=cursor
+                    )
+
+                    #include the ids in the events data row
+                    # logger.info("creating facts table data packet")
+                    events_data["facility_id"] = facility_id
+                    events_data["timeslot_id"] = timeslot_id
+                    events_data["inserted_datetime"] = inserted_datetime
+                    events_data_key = (
+                        events_data.get("num_people"),
+                        events_data.get("week_number"),
+                        events_data.get("facility_id"),
+                        events_data.get("timeslot_id"),
+                    )
+                    if events_data_key not in events_table_ids_dict:
+                        events_data_list.append(events_data)
+
+                #batch upload of the facts table data
+                if events_data_list:
+                    logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
+                    load_slot_events_batch(events_data_list, cursor)
+                else:
+                    logger.info("There is no new data to add from this batch.")
+                logger.info("upating the helper table")
+                _ = load_helper_data(object_name, cursor)
 
                 #commit transactions from entire object together otherwise rollback
-                if write_to_db:
-                    _ = load_helper_data(object_name, cursor)
+                if dry_run:
+                    conn.rollback()
+                    logger.info(f"DRY RUN: did not commit data for {object_name}")
+                else:
+                    logger.info("committing batch")
                     conn.commit()
-                logger.info(f"uploaded data for {object_name}")
+                    logger.info(f"uploaded data for {object_name}")
 
             except psycopg.Error as e:
                 conn.rollback()
@@ -424,7 +302,7 @@ def load_data(conn, server, write_to_db=True, override_s3_bucket=False):
                 logger.error(f"input data does not have the right format: {e}")
             except Exception:
                 conn.rollback()
-                logger.exception("An unhandled exception occured")
+                logger.exception("An unhandled exception occured during the write transaction")
             finally:
                 cursor.close()
 

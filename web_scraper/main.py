@@ -53,7 +53,7 @@ def main():
     This function orchestrates the entire process of retrieving availability data
     from the RA Centre website and optionally saving it to a MySQL database. It sets
     up the environment, establishes database connections, scrapes data, and saves new
-    data to the database if the `write_to_db` argument is set to True.
+    data to the database
 
     Returns:
         str: log string

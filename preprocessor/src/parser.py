@@ -84,23 +84,28 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
             start_datetime = None
             end_datetime = None
 
-        data_line = {
+        facilities_data = {
             "facility_name": data.get("facilityName"),
+            "facility_type": get_facility_type(data.get("facilityName")),
+            }
+
+        timeslot_data = {
             "start_time": start_datetime.timetz(),
             "end_time": end_datetime.timetz(),
-            "num_people": data.get("numPeople"),
+            "day_of_week": start_datetime.strftime("%A"),
+            "release_interval_days": (
+                start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
         }
 
-        data_line["facility_type"] = get_facility_type(data_line.get("facility_name"))
-        data_line["week_number"] = start_datetime.isocalendar()[1]
-        data_line["scraped_datetime"] = scraped_datetime
-        data_line["inserted_datetime"] = datetime.now(tz=TZ)
-        data_line["day_of_week"] = start_datetime.strftime("%A")
-        data_line["release_interval_days"] = (
-            start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
+        event_data = {
+            "num_people": data.get("numPeople"),
+            "scraped_datetime": scraped_datetime,
+            "week_number": start_datetime.isocalendar()[1],
+            "inserted_datetime": datetime.now(tz=TZ),
+        }
 
-        return data_line, scraped_datetime
+        return facilities_data, timeslot_data, event_data
 
     except (ValueError, TypeError, KeyError) as e:
         logger.warning(f"Error processing item: {data.get('name')}. Error: {e}") #pylint: disable=logging-fstring-interpolation
-        return None, None
+        return None, None, None
