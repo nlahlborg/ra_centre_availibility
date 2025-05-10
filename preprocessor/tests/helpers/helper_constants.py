@@ -87,6 +87,18 @@ SAMPLE_EVENTS_DATA = {
     'week_number': 6,
 }
 
+GET_FACILITIES_IDS_DICT_TEST_CONSTANT = {
+    ('Badminton Court 1', 'badminton_court'): 1
+}
+
+GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT = {
+    (datetime.time(20, 0, tzinfo=RA_CENTRE_TZ), datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 'Friday',  7): 1
+}
+
+GET_REGISTRATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT = {
+    (1, 6, 1, 1): 1
+}
+
 GET_FACILITY_TYPE_TEST_CONSTANT = (
     ("Squash Court 5", "squash_court"),
     ("Archery Range Lane 1", "archery_range_lane"),
@@ -201,48 +213,72 @@ GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT = (
     ),
 )
 
-#(data in, id out)
-LOAD_FACILITY_TEST_CONSTANT = (
+#data,ids_dict,table_name,id_col_name,schema,expected_id)
+LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     #facility already matches existing id = 1
     (
         {
             'facility_name': 'Badminton Court 1',
             'facility_type': 'badminton_court'
         },
+        {('Badminton Court 1', 'badminton_court'): 1},
+        "facilities",
+        "facility_id",
+        "source",
         1
     ),
-    #facility doesn't match existing id
-
+    #facility doesn't matches existing id = 1
     (
         {
-            'facility_name': 'other facility',
-            'facility_type': 'other_facility'
+            'facility_name': 'Other Court 1',
+            'facility_type': 'other_court'
         },
+        {('Badminton Court 1', 'badminton_court'): 1},
+        "facilities",
+        "facility_id",
+        "source",
         2
     ),
-)
-
-#(data in, id out)
-LOAD_TIMESLOT_TEST_CONSTANT = (
     #timeslot already matches existing id = 1
     (
         {
-        'day_of_week': 'Friday',
-        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
-        'release_interval_days': 7,
-        'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
+            'day_of_week': 'Friday',
+            'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+            'release_interval_days': 7,
+            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
         },
+        {
+            (
+                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ), 
+                datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+                "Friday",
+                7
+            ): 1
+        },
+        "timeslots",
+        "timeslot_id",
+        "source",
         1
     ),
-    #timeslot doesn't match existing id
-
+    #timeslot doesn't matches existing id = 1
     (
         {
-        'day_of_week': 'Saturday',
-        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
-        'release_interval_days': 7,
-        'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
+            'day_of_week': 'Saturday',
+            'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+            'release_interval_days': 7,
+            'start_time': datetime.time(20, 00, tzinfo=RA_CENTRE_TZ)
         },
+        {
+            (
+                datetime.time(20, 00, tzinfo=RA_CENTRE_TZ), 
+                datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
+                "Friday",
+                7
+            ): 1
+        },
+        "timeslots",
+        "timeslot_id",
+        "source",
         2
     ),
 )

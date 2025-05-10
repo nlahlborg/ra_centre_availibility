@@ -11,7 +11,7 @@ from psycopg import sql
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
 from src.download import (get_s3_object_names, get_s3_json_data,
-    get_sql_facilities_table, get_sql_timeslots_table, get_sql_registration_system_events_table)
+    get_facilities_ids_dict, get_timeslots_ids_dict, get_registration_system_events_ids_dict)
 
 logger = logging.getLogger(__name__)
 
@@ -108,87 +108,6 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
 
     return stmt, values
 
-def load_facility(data, cursor, schema="source"):
-    """
-    Loads facility data into the facilities table, checking for duplicates.
-
-    Args:
-        data: A list of dictionaries containing facility attributes
-            (e.g., [{'facility_name': 'Badminton Court 1', 'facility_type': 'badminton_court'}]).
-        cursor: PostgreSQL database cursor object.
-        schema: schema to upload to
-
-    Returns:
-        the facility_id
-    """
-    table_id = None
-    # Check if the facility already exists based on its name
-    query = f"""
-        SELECT facility_id
-        FROM {schema}.facilities
-        WHERE facility_name = '{data['facility_name']}'"""
-    cursor.execute(query)
-    existing_facility = cursor.fetchone()
-
-    if existing_facility:
-        # Facility already exists, return its ID
-        table_id = existing_facility[0]
-        logger.debug(f"Facility '{data['facility_name']}' already exists with ID: {table_id}")
-    else:
-        # Facility does not exist, insert it, and get the generated ID
-        stmt, values = generate_insert_sql(
-            data,
-            id_col_name="facility_id",
-            table_name="facilities",
-            schema=schema)
-        cursor.execute(stmt, values)
-        table_id = cursor.fetchone()[0]  # Get the generated ID
-
-    return table_id
-
-def load_timeslot(data, cursor, schema="source"):
-    """
-    Loads timeslots data into the timeslots table, checking for duplicates.
-
-    Args:
-        data: A list of dictionaries containing timeslot attribuites
-        cursor: PostgreSQL database cursor object.
-        schema: schema to upload to
-
-    Returns:
-        the timeslot id
-    """
-
-    table_id = None
-    # Check if the timeslot already exists based on its name
-    query = f"""
-        SELECT timeslot_id
-        FROM {schema}.timeslots
-        WHERE 
-            start_time = '{data['start_time']}'
-            AND end_time = '{data['end_time']}'
-            AND day_of_week = '{data['day_of_week']}'
-            AND release_interval_days = '{data['release_interval_days']}'
-    """
-    cursor.execute(query)
-    existing_facility = cursor.fetchone()
-
-    if existing_facility:
-        # Facility already exists, return its table_id
-        table_id = existing_facility[0]
-        logger.debug(f"Timeslot '{data}' already exists with table_id: {table_id}")
-    else:
-        # Facility does not exist, insert it, and get the generated table_id
-        stmt, values = generate_insert_sql(
-            data,
-            id_col_name="timeslot_id",
-            table_name="timeslots",
-            schema=schema)
-        cursor.execute(stmt, values)
-        table_id = cursor.fetchone()[0]  # Get the generated ID
-
-    return table_id
-
 def load_slot_events_batch(data_list, cursor, schema="source"):
     """
     Loads registration events data into the registration_slot_events table, 
@@ -213,7 +132,6 @@ def load_slot_events_batch(data_list, cursor, schema="source"):
     except psycopg.Error as e:
         logger.exception(e)
         return False
-
 
 def load_helper_data(object_name, cursor, schema="helper"):
     """
@@ -244,6 +162,44 @@ def load_helper_data(object_name, cursor, schema="helper"):
 
     return object_name
 
+def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
+    """
+    wrapper for generate_insert_sql and cursor.fetchone to insert 
+    data and get the id of the inserted row
+
+    Args:
+        data: A list of dictionaries containing attributes
+            (e.g., [{'facility_name': 'Badminton Court 1', 'facility_type': 'badminton_court'}]).
+        table_name: name of the target table
+        id_col_name: name of the id column to return
+        cursor: PostgreSQL database cursor object.
+        schema: schema to upload to
+
+    Returns:
+        the table_id
+    """
+    stmt, values = generate_insert_sql(data, id_col_name, table_name, schema)
+    cursor.execute(stmt, values)
+    table_id = cursor.fetchone()[0]  # Get the generated ID
+
+    return table_id
+
+def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema):
+    """
+    wrapper for load_facility. Determines if the data is already in the db 
+    and if not then uploads
+    """
+    #get the facilities id
+    #logger.info(f"getting {id_col_name} if it exists")
+    idn = ids_dict.get(tuple(data.values()))
+    if idn is None:                        
+        #logger.info(f"uploading a new record to {table_name}:\n{data.values()}")
+        idn = load_single_data(data, table_name, id_col_name, cursor, schema)
+        ids_dict[tuple(data.values())] = idn
+        #logger.info(f"The new id is {ids_dict[tuple(data.values())]}")
+
+    return idn
+
 def load_data(conn, server, dry_run=False, override_s3_bucket=False):
     """
     logic for loading all data. Data from each S3 object is loaded as a 
@@ -271,31 +227,42 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
             logger.info("retreiving single s3 object")
             data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
 
-            # load the dimensions tables from the db
-            facilities_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_facilities_table(conn)}
-            timeslots_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_timeslots_table(conn)}
-            events_table_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_registration_system_events_table(conn, scraped_datetime)}
+            # load the existing tables from the db to compare in memory
+            logger.info("loading db subsets")
+            facilities_ids_dict = get_facilities_ids_dict(conn)
+            timeslots_ids_dict = get_timeslots_ids_dict(conn)
+            events_table_ids_dict = get_registration_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
 
             # parse the raw data and store in memory
             logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
             cursor = conn.cursor()
             events_data_list = []
             try:
-                for idx, item in enumerate(data):
-                    #first parse the data
-                    facilities_data, timeslot_data, events_data = parse_data(item, scraped_datetime)
+                for item in data:
+                    # first parse the data
+                    #logger.info("parsing single line of data")
+                    facilities_data, timeslots_data, events_data = parse_data(item, scraped_datetime)
 
-                    #get the facilities id
-                    facility_id = facilities_ids_dict.get(facilities_data.values())
-                    if facility_id is None:
-                        facility_id = load_facility(facilities_data, cursor)
+                    facility_id = load_new_single_data(
+                        data=facilities_data,
+                        ids_dict=facilities_ids_dict,
+                        table_name="facilities",
+                        id_col_name="facility_id",
+                        schema="source",
+                        cursor=cursor
+                    )
 
-                    #track unique timeslots:
-                    timeslot_id = timeslots_ids_dict.get(timeslot_data.values())
-                    if timeslot_id is None:
-                        timeslot_id = load_timeslot(timeslot_data, cursor)
+                    timeslot_id = load_new_single_data(
+                        data=timeslots_data,
+                        ids_dict=timeslots_ids_dict,
+                        table_name="timeslots",
+                        id_col_name="timeslot_id",
+                        schema="source",
+                        cursor=cursor
+                    )
 
                     #include the ids in the events data row
+                    # logger.info("creating facts table data packet")
                     events_data["facility_id"] = facility_id
                     events_data["timeslot_id"] = timeslot_id
                     events_data["inserted_datetime"] = inserted_datetime
@@ -309,14 +276,20 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                         events_data_list.append(events_data)
 
                 #batch upload of the facts table data
-                load_slot_events_batch(events_data_list, cursor)
+                if events_data_list:
+                    logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
+                    load_slot_events_batch(events_data_list, cursor)
+                else:
+                    logger.info(f"There is no new data to add from this batch.")
+                logger.info("upating the helper table")
                 _ = load_helper_data(object_name, cursor)
 
                 #commit transactions from entire object together otherwise rollback
                 if dry_run:
                     conn.rollback()
                     logger.info(f"DRY RUN: did not commit data for {object_name}")
-                else:
+                else:                    
+                    logger.info(f"committing batch")
                     conn.commit()
                     logger.info(f"uploaded data for {object_name}")
 

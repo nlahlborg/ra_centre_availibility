@@ -9,15 +9,14 @@ import pytest
 
 from src.upload import (
     get_list_of_unprocessed_object_names,
-    generate_insert_sql, generate_insert_sql_batch, load_facility,
-    load_timeslot, load_slot_events_batch
+    generate_insert_sql, generate_insert_sql_batch,
+    load_new_single_data, load_slot_events_batch
 )
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
     GENERATE_INSERT_SQL_TEST_CONSTANT,
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
-    LOAD_FACILITY_TEST_CONSTANT,
-    LOAD_TIMESLOT_TEST_CONSTANT,
+    LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
     SAMPLE_EVENTS_DATA
 )
 
@@ -70,33 +69,22 @@ def test_generate_insert_sql_batch(data_list, table_name, expected_sql, expected
     assert sql.as_string() == expected_sql
     assert values == expected_values
 
-@pytest.mark.parametrize("data,expected", LOAD_FACILITY_TEST_CONSTANT)
-def test_load_facility(conn_fixture, data, expected):
+@pytest.mark.parametrize("data,ids_dict,table_name,id_col_name,schema,expected", LOAD_NEW_SINGLE_DATA_TEST_CONSTANT)
+def load_new_single_data(conn_fixture, data, ids_dict, table_name, id_col_name, schema, expected):
     """
     Test facility data load
     """
     cursor = conn_fixture.cursor()
-    result = load_facility(data, cursor)
+    result = load_new_single_data(
+        data=data,
+        ids_dict=ids_dict,
+        table_name=table_name,
+        id_col_name=id_col_name,
+        schema=schema,
+        cursor=cursor
+    )
 
-    try:
-        assert result == expected
-    except AssertionError as e:
-        conn_fixture.close()
-        raise e
-
-@pytest.mark.parametrize("data,expected", LOAD_TIMESLOT_TEST_CONSTANT)
-def test_load_timeslot(conn_fixture, data, expected):
-    """
-    Test timeslot data load
-    """
-    cursor = conn_fixture.cursor()
-    result = load_timeslot(data, cursor)
-
-    try:
-        assert result == expected
-    except AssertionError as e:
-        conn_fixture.close()
-        raise e
+    assert result == expected
 
 def test_load_slot_events_batch(conn_fixture):
     """

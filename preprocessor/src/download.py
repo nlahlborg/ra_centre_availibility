@@ -166,3 +166,12 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
     cursor.close()
 
     return data
+
+def get_facilities_ids_dict(conn, schema="source"):
+    return {tuple(row[1:]): row[0] for row in get_sql_facilities_table(conn, schema)}
+
+def get_timeslots_ids_dict(conn, schema="source"):
+    return {tuple(row[1:]): row[0] for row in get_sql_timeslots_table(conn, schema)}
+
+def get_registration_system_events_ids_dict(conn, min_start_datetime=None, schema="source"):
+    return {tuple(row[1:]): row[0] for row in get_sql_registration_system_events_table(conn, min_start_datetime, schema)}
