@@ -74,36 +74,17 @@ SAMPLE_FACILITIES_DATA = {
     'facility_type': 'badminton_court'
 }
 
-SAMPLE_TIMESLOT_DATA = {
-    'day_of_week': 'Friday',
+SAMPLE_TIMESLOTS_DATA = {
+    'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ),
     'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
-    'release_interval_days': 7,
-    'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
+    'day_of_week': 'Friday',
+    'release_interval_days': 7
 }
 
 SAMPLE_EVENTS_DATA = {
     'num_people': 1,
     'scraped_datetime': datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
     'week_number': 6,
-}
-
-
-SAMPLE_RESTRUCTURED_DATA = {
-    'facilities': {
-        'facility_name': 'Badminton Court 1',
-        'facility_type': 'badminton_court'
-        },
-    'reservation_system_events': {
-        'num_people': 1,
-        'scraped_datetime': datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
-        'week_number': 6
-        },
-    'timeslots': {
-        'day_of_week': 'Friday',
-        'end_time': datetime.time(21, 0, tzinfo=RA_CENTRE_TZ),
-        'release_interval_days': 7,
-        'start_time': datetime.time(20, 0, tzinfo=RA_CENTRE_TZ)
-        }
 }
 
 GET_FACILITY_TYPE_TEST_CONSTANT = (
@@ -133,7 +114,7 @@ PARSE_DATA_TEST_CONSTANT = (
         SAMPLE_RAW_JSON,
         datetime.datetime(2025, 4, 26, 7, 2, tzinfo=RA_CENTRE_TZ),
         SAMPLE_FACILITIES_DATA,
-        SAMPLE_TIMESLOT_DATA,
+        SAMPLE_TIMESLOTS_DATA,
         SAMPLE_EVENTS_DATA
     ),
 )
@@ -195,15 +176,15 @@ GENERATE_INSERT_SQL_TEST_CONSTANT = (
         ('Badminton Court 1', 'badminton_court')
     ),
     (
-        SAMPLE_TIMESLOT_DATA,
+        SAMPLE_TIMESLOTS_DATA,
         "timeslot_id",
         "timeslots",
         """
-            INSERT INTO source.timeslots (day_of_week, end_time, release_interval_days, start_time)
+            INSERT INTO source.timeslots (start_time, end_time, day_of_week, release_interval_days)
             VALUES (%s, %s, %s, %s)
             RETURNING timeslot_id
         """,
-        ('Friday', datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 7, datetime.time(20, 0, tzinfo=RA_CENTRE_TZ))
+        (datetime.time(20, 0, tzinfo=RA_CENTRE_TZ), datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 'Friday', 7)
     )
 )
 

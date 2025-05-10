@@ -8,6 +8,5 @@ CREATE TABLE "source".timeslots (
 	release_interval_days int4 NOT NULL,
 	CONSTRAINT timeslots_pk PRIMARY KEY (timeslot_id)
 );
-INSERT INTO "source".timeslots (start_time,end_time,day_of_week,release_interval_days) VALUES
+INSERT INTO "source".timeslots (start_time, end_time, day_of_week, release_interval_days) VALUES
 	 ('20:00:00','21:00:00','Friday',7)
-

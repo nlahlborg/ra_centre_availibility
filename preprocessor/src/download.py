@@ -157,7 +157,7 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
                 facility_id,
                 timeslot_id
             FROM get_start_datetime
-            WHERE start_datetime >= ({min_start_datetime} - '7 days'::interval)
+            WHERE start_datetime >= ('{min_start_datetime}'::timestamp - '7 days'::interval)
             ORDER BY facility_id, timeslot_id, week_number, scraped_datetime DESC
         """
 

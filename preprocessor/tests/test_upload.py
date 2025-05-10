@@ -3,11 +3,9 @@ tests for functions in src/upload_utils.py
 """
 #pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
 import sys
-import datetime
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
-from pytest_postgresql import factories
 
 from src.upload import (
     get_list_of_unprocessed_object_names,
@@ -22,18 +20,6 @@ from tests.helpers.helper_constants import (
     LOAD_TIMESLOT_TEST_CONSTANT,
     SAMPLE_EVENTS_DATA
 )
-
-postgresql_local_dev = factories.postgresql_noproc(
-    user='postgres',
-    password='postgres',
-    load=[
-        Path(__file__).parent / "helpers" / "helper_helper_loaded_objects.sql",
-        Path(__file__).parent / "helpers" / "helper_helper_loaded_objects_blank.sql",
-        Path(__file__).parent / "helpers" / "source_facilities.sql",
-        Path(__file__).parent / "helpers" / "source_timeslots.sql",
-        Path(__file__).parent / "helpers" / "source_reservation_system_events.sql"
-        ])
-conn_fixture = factories.postgresql("postgresql_local_dev", dbname="test")
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
 def test_get_list_of_unprocessed_object_names(conn_fixture, object_names, expected) -> None:

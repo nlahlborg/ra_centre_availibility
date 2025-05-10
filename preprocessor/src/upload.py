@@ -11,8 +11,7 @@ from psycopg import sql
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
 from src.download import (get_s3_object_names, get_s3_json_data,
-    get_sql_facilities_table, get_sql_timeslots_table,
-    get_sql_registration_system_events_table)
+    get_sql_facilities_table, get_sql_timeslots_table, get_sql_registration_system_events_table)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,6 @@ def get_list_of_unprocessed_object_names(
     newer than the most recent object.
     """
     try:
-
         # pylint: disable=line-too-long
         placeholder = ", ".join([f"('{x}', '{parse_object_name(x).strftime('%Y-%m-%d %H:%M:%S%z')}'::timestamptz)" for x in object_names])
 
@@ -66,14 +64,16 @@ def get_list_of_unprocessed_object_names(
         cursor.execute(query)
         result = cursor.fetchall()
         unprocessed_object_names = [row[0] for row in result]
-        return sorted(unprocessed_object_names)
+        ret_val = sorted(unprocessed_object_names)
 
     except psycopg.Error as e:
         logger.error(f"Error reading from Postgres {e}")
-        return []
-    except Exception:
-        logger.exception("An unhandled exception occured")
-        return []
+        ret_val = []
+    except Exception as e:
+        logger.exception("An unhandled exception occured in reading from helper table")
+        ret_val = []
+
+    return ret_val
 
 def generate_insert_sql(data, id_col_name, table_name, schema="source"):
     """
@@ -274,7 +274,7 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
             # load the dimensions tables from the db
             facilities_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_facilities_table(conn)}
             timeslots_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_timeslots_table(conn)}
-            events_table_ids_dict = {tuple(row[1:]): row[0] for row in get_list_of_unprocessed_object_names(conn, scraped_datetime)}
+            events_table_ids_dict = {tuple(row[1:]): row[0] for row in get_sql_registration_system_events_table(conn, scraped_datetime)}
 
             # parse the raw data and store in memory
             logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
@@ -328,11 +328,9 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
                 logger.error(f"input data does not have the right format: {e}")
             except Exception:
                 conn.rollback()
-                logger.exception("An unhandled exception occured")
+                logger.exception("An unhandled exception occured during the write transaction")
             finally:
                 cursor.close()
-
-            break
 
         conn.close()
         if server:
