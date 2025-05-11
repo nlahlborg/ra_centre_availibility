@@ -7,10 +7,17 @@ import sys
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
-from src.parser import get_facility_type, parse_object_name, parse_data
+from src.setup import RA_CENTRE_TZ as TZ
+from src.parser import (
+    get_facility_type, parse_object_name, parse_data,
+    parse_displayname, flag_inconsistant_datetime,
+    flag_stale_start_datetime
+)
 from tests.helpers.helper_constants import (
     GET_FACILITY_TYPE_TEST_CONSTANT, PARSE_OBJECT_NAME_TEST_CONSTANT,
-    PARSE_DATA_TEST_CONSTANT
+    PARSE_DATA_TEST_CONSTANT, PARSE_DISPLAY_NAME_TEST_CONSTANT,
+    FLAG_INCONSISTANT_DATETIME_TEST_CONSTANT,
+    FLAG_STALE_START_DATETIME_TEST_CONSTANT
 )
 
 @pytest.mark.parametrize("facility_name,expected", GET_FACILITY_TYPE_TEST_CONSTANT)
@@ -52,3 +59,9 @@ def test_parse_data(
     assert facility_data == expected_facility_data
     assert timeslot_data == expected_timeslot_data
     assert event_data == expected_event_data
+
+@pytest.mark.parametrize("display_name,year,expected", PARSE_DISPLAY_NAME_TEST_CONSTANT)
+def test_parse_displayname(display_name, year, expected):
+    result = parse_displayname(display_name, year)
+
+    assert result.astimezone(TZ) == expected.astimezone(TZ)

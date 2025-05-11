@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
+from src.setup import RA_CENTRE_TZ
 from src.upload import (
     get_list_of_unprocessed_object_names,
     generate_insert_sql, generate_insert_sql_batch,
@@ -108,8 +109,11 @@ def test_load_slot_events_batch(conn_fixture):
 
     assert result
 
-@pytest.mark.parametrize("data,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
-def test_process_single_data(conn_fixture, data, expected):
+@pytest.mark.parametrize("data,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
+def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
+    """
+    test function that parses data and uploads any new data to facilities/timeslots table
+    """
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     facilities_ids_dict = get_facilities_ids_dict(conn_fixture)
     timeslots_ids_dict = get_timeslots_ids_dict(conn_fixture)
@@ -121,15 +125,14 @@ def test_process_single_data(conn_fixture, data, expected):
         facilities_ids_dict,
         timeslots_ids_dict,
         events_table_ids_dict,
-        scraped_datetime=datetime.now(),
+        scraped_datetime=scraped_datetime,
         inserted_datetime=datetime.now(),
         cursor=cursor
     )
 
     # don't compare scraped_datetime
     if result is not None:
-        _ = result.pop("scraped_datetime")
         _ = result.pop("inserted_datetime")
-        assert sorted(result) == sorted(expected)
+        assert sorted(result.items()) == sorted(expected.items())
     else:
         assert result is None and expected is None

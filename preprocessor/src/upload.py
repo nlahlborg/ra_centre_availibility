@@ -9,7 +9,7 @@ import psycopg
 from psycopg import sql
 
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
-from src.parser import parse_data, parse_object_name
+from src.parser import parse_data, parse_object_name, DataValidationError
 from src.download import (get_s3_object_names, get_s3_json_data,
     get_facilities_ids_dict, get_timeslots_ids_dict, get_reservation_system_events_ids_dict)
 
@@ -104,11 +104,7 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
         sql.SQL(placeholders)
     )
 
-    print(stmt.as_string())
-
     values = [tuple(row[col] for col in columns) for row in data_list]
-
-    print(values)
 
     return stmt, values
 
@@ -338,6 +334,10 @@ def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=Fa
             except KeyError as e:
                 conn.rollback()
                 logger.error(f"input data does not have the right format: {e}")
+            except DataValidationError as e:
+                conn.rollback()
+                logger.error(e)
+                raise DataValidationError
             except Exception:
                 conn.rollback()
                 logger.exception("An unhandled exception occured during the write transaction")
@@ -349,6 +349,13 @@ def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=Fa
             server.stop()
 
         return True
+    
+    except DataValidationError as e:
+        logger.exception(f"A data validation error was detected: {e}")
+        conn.close()
+        if server:
+            server.stop()
+        return False
     except Exception:
         logger.exception("an unhandled exception occured ouside of the write transactions")
         conn.close()

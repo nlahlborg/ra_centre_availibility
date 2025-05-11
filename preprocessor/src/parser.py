@@ -11,9 +11,15 @@ from datetime import datetime
 import re
 import logging
 
-from src.setup import RA_CENTRE_TZ as TZ
+from src.setup import RA_CENTRE_TZ as TZ, DISPLAY_TZ
 
 logger = logging.getLogger("data_parser")
+
+class DataValidationError(Exception):
+    """
+    raise this exception if invalid data is detected while parsing
+    """
+    pass
 
 def get_tz_aware_datetime(timestamp: int, tz=TZ) -> datetime:
     """
@@ -51,11 +57,45 @@ def parse_object_name(object_name, prefix="raw_centre_raw_"):
     try:
         date_string = object_name.split(prefix)[-1]
         date_string = date_string.split(".json")[0]
-        return datetime.strptime(date_string, "%Y%m%dT%H%M%SZ").replace(tzinfo=TZ)
+        return TZ.localize(datetime.strptime(date_string, "%Y%m%dT%H%M%SZ"))
 
     except ValueError as e:
         logger.error(f"received incorrectly formatted object name {object_name}")
         raise e
+
+def parse_displayname(display_name:str, year: int) -> datetime:
+    """
+    get the datetime from the displayname
+    """
+    parts = display_name.split(' - ')
+    date_part = parts[1].split(' ', maxsplit=1)[-1].strip()
+    time_part = parts[2].strip()
+    
+    # Combine the parts into a datetime string format
+    
+    # Parse the datetime string
+    datetime_str = f"{date_part} {year} {time_part}"
+    retvar = DISPLAY_TZ.localize(datetime.strptime(datetime_str, "%b %d %Y %I:%M %p"))
+    
+    return retvar
+
+def flag_inconsistant_datetime(start_datetime: datetime, display_name: str) -> None:
+    """
+    parse the reservation slot displayname and raise a DataValidationError if
+    the displayname doesn't match the start_datetime
+    """
+    start_datetime_display = parse_displayname(display_name, start_datetime.year)
+    if start_datetime_display != start_datetime:
+        logger.error(f"start datetime from api parsing: {start_datetime} and displayname {display_name} are inconsistent.")
+        raise DataValidationError
+
+def flag_stale_start_datetime(start_datetime: datetime, scraped_datetime: datetime) -> None:
+    """
+    raise a DataValidationError if the start datetime is stale
+    """
+    if start_datetime < scraped_datetime:
+        logger.error("reservation slot start_datetime is less than the scraped_datetime, which is invalid")
+        raise DataValidationError
 
 def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
     """
@@ -68,6 +108,7 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
         a flat key-value dict
     """
     try:
+        display_name = data.get("name")
         schedule = data.get("schedule")  # Get the schedule (might be None)
         # Check if schedule exists, is list and is not empty
         if schedule and isinstance(schedule, list) and schedule:
@@ -103,6 +144,10 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
             "week_number": start_datetime.isocalendar()[1],
             "inserted_datetime": datetime.now(tz=TZ),
         }
+
+        #error checking
+        flag_inconsistant_datetime(start_datetime, display_name)
+        flag_stale_start_datetime(start_datetime, scraped_datetime)
 
         return facilities_data, timeslot_data, event_data
 
