@@ -110,7 +110,7 @@ def get_sql_timeslots_table(conn, schema="source"):
 
     return data
 
-def get_sql_registration_system_events_table(conn, min_start_datetime=None, schema="source"):
+def get_sql_reservation_system_events_table(conn, min_start_datetime=None, schema="source"):
     """
     fetch the most recent event for each facility and timeslot combination
     """
@@ -129,34 +129,13 @@ def get_sql_registration_system_events_table(conn, min_start_datetime=None, sche
         """
     else:
         sql = f"""
-            WITH get_start_datetime AS (
-            SELECT
-                *,
-                ('Jan 1 ' || EXTRACT(YEAR FROM scraped_datetime)::text || ' ' || start_time::text)::timestamptz
-                    - (EXTRACT(DOW FROM (('Jan 1 ') || EXTRACT(YEAR FROM scraped_datetime)::text)::date)::text || ' days')::interval
-                    + (((week_number-1)*7)::text || ' days')::interval
-                    - (CASE
-                        WHEN day_of_week = 'Sunday' THEN 0
-                        WHEN day_of_week = 'Monday' THEN 1
-                        WHEN day_of_week = 'Tuesday' THEN 2
-                        WHEN day_of_week = 'Wednesday' THEN 3
-                        WHEN day_of_week = 'Thursday' THEN 4
-                        WHEN day_of_week = 'Friday' THEN 5
-                        WHEN day_of_week = 'Saturday' THEN 6
-                        END::text || ' days')::interval
-                    AS start_datetime
-            FROM "{schema}".reservation_system_events
-            INNER JOIN "{schema}".timeslots
-                USING(timeslot_id)
-            )
-            
             SELECT DISTINCT ON(facility_id, timeslot_id, week_number)
                 event_id,
                 num_people,
                 week_number,
                 facility_id,
                 timeslot_id
-            FROM get_start_datetime
+            FROM "{schema}".__reservation_system_events__start_datetime rse
             WHERE start_datetime >= ('{min_start_datetime}'::timestamp - '7 days'::interval)
             ORDER BY facility_id, timeslot_id, week_number, scraped_datetime DESC
         """
@@ -182,10 +161,10 @@ def get_timeslots_ids_dict(conn, schema="source"):
     """
     return {tuple(row[1:]): row[0] for row in get_sql_timeslots_table(conn, schema)}
 
-def get_registration_system_events_ids_dict(conn, min_start_datetime=None, schema="source"):
+def get_reservation_system_events_ids_dict(conn, min_start_datetime=None, schema="source"):
     """
-    wrapper for get_sql_registration_system_events_table
+    wrapper for get_sql_reservation_system_events_table
     returns a dictionary of unique table values
     """
-    table = get_sql_registration_system_events_table(conn, min_start_datetime, schema)
+    table = get_sql_reservation_system_events_table(conn, min_start_datetime, schema)
     return {tuple(row[1:]): row[0] for row in table}

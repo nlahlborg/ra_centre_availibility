@@ -10,5 +10,6 @@ CREATE TABLE "source".reservation_system_events (
 	CONSTRAINT reservation_system_events_pk PRIMARY KEY (event_id)
 );
 INSERT INTO "source".reservation_system_events (num_people,scraped_datetime,week_number,facility_id,timeslot_id) VALUES
-	 (1,'2025-04-26 00:07:02.000 +000',6,1,1),
-	 (0,'2025-04-26 00:07:02.000 +000',6,1,1);
+	 (0,'2025-04-26 00:07:02.000 +000',6,1,1),
+	 (1,'2025-04-26 00:07:04.000 +000',6,1,1),
+	 (0,'2025-04-26 00:07:04.000 +000',7,1,1);

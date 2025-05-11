@@ -87,6 +87,23 @@ SAMPLE_EVENTS_DATA = {
     'week_number': 6,
 }
 
+#min start_datetime, expected
+GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT = (
+    #no start time provided
+    (
+        None,
+        [
+            (2, 1, 6, 1, 1),
+            (3, 0, 7, 1, 1),
+        ]
+    ),
+    #all start times in db are stale
+    (
+        datetime.datetime.now(),
+        []
+    ),
+)
+
 GET_FACILITIES_IDS_DICT_TEST_CONSTANT = {
     ('Badminton Court 1', 'badminton_court'): 1
 }
@@ -95,8 +112,9 @@ GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT = {
     (datetime.time(20, 0, tzinfo=RA_CENTRE_TZ), datetime.time(21, 0, tzinfo=RA_CENTRE_TZ), 'Friday',  7): 1
 }
 
-GET_REGISTRATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT = {
-    (1, 6, 1, 1): 1
+GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT = {
+    (1, 6, 1, 1): 2,
+    (0, 7, 1, 1): 3
 }
 
 GET_FACILITY_TYPE_TEST_CONSTANT = (

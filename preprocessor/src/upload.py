@@ -11,7 +11,7 @@ from psycopg import sql
 from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
 from src.download import (get_s3_object_names, get_s3_json_data,
-    get_facilities_ids_dict, get_timeslots_ids_dict, get_registration_system_events_ids_dict)
+    get_facilities_ids_dict, get_timeslots_ids_dict, get_reservation_system_events_ids_dict)
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
 
 def load_slot_events_batch(data_list, cursor, schema="source"):
     """
-    Loads registration events data into the registration_slot_events table, 
+    Loads reservation events data into the reservation_slot_events table, 
 
     Args:
         data: A list of dictionaries containing timeslot attribuites
@@ -293,7 +293,7 @@ def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=Fa
             logger.info("loading db subsets")
             facilities_ids_dict = get_facilities_ids_dict(conn)
             timeslots_ids_dict = get_timeslots_ids_dict(conn)
-            events_table_ids_dict = get_registration_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
+            events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
 
             # parse the raw data and store in memory
             logger.info(f"parsing and uploading {len(data)} data records for {object_name}")

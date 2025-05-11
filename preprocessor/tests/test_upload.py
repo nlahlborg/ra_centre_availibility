@@ -17,7 +17,7 @@ from src.upload import (
 from src.download import (
     get_facilities_ids_dict,
     get_timeslots_ids_dict,
-    get_registration_system_events_ids_dict
+    get_reservation_system_events_ids_dict
 )
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
@@ -113,7 +113,7 @@ def test_process_single_data(conn_fixture, data, expected):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     facilities_ids_dict = get_facilities_ids_dict(conn_fixture)
     timeslots_ids_dict = get_timeslots_ids_dict(conn_fixture)
-    events_table_ids_dict = get_registration_system_events_ids_dict(conn_fixture)
+    events_table_ids_dict = get_reservation_system_events_ids_dict(conn_fixture)
 
     cursor = conn_fixture.cursor()
     result = process_single_data(
