@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from src.setup import db_connect, load_env_file, LOCAL_TZ
-from src.upload import load_data
+from src.upload import process_and_load_all_data
 
 LOG_TO_FILE = os.environ.get("LOG_TO_FILE", False)
 
@@ -71,7 +71,7 @@ def main(dry_run=True, override_s3_bucket=False):
     retvar = False
     if conn:
         logger.info("DB connection established.")
-        retvar = load_data(conn, server, dry_run, override_s3_bucket)
+        retvar = process_and_load_all_data(conn, server, dry_run, override_s3_bucket)
     else:
         logger.error("No DB Connection")
     return retvar

@@ -307,3 +307,56 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
     ),
     #slot event exactly matches existing record except num_people, with scraped_datetime greater than previous
 )
+
+# data,expected_data_dict
+PROCESS_SINGLE_DATA_TEST_CONSTANT = (
+    # copy of what's in the db already
+    (
+        SAMPLE_RAW_JSON,
+        None
+    ),
+    # copy of what's in the db already with just a different number of people
+    (
+        {
+            "facilityName": "Badminton Court 1",
+            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+            "numPeople": 0,
+            "regStart": 1738332000000,
+            "schedule": [
+                {
+                    "endDatetime": 1738962000000,
+                    "startDatetime": 1738958400000,
+                    "subject": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM"
+                }
+            ],
+        },
+        {
+            'num_people': 0,
+            'week_number': 6,
+            'facility_id': 1,
+            'timeslot_id': 1
+        }
+    ),
+    # new facility
+    (
+        {
+            "facilityName": "Badminton Court 0",
+            "name": "Badminton Court 0 - Friday  Feb 07 - 3:00 PM",
+            "numPeople": 1,
+            "regStart": 1738332000000,
+            "schedule": [
+                {
+                    "endDatetime": 1738962000000,
+                    "startDatetime": 1738958400000,
+                    "subject": "Badminton Court 0 - Friday  Feb 07 - 3:00 PM"
+                }
+            ],
+        },
+        {
+            'num_people': 0,
+            'week_number': 6,
+            'facility_id': 2,
+            'timeslot_id': 1
+        }
+    ),
+)

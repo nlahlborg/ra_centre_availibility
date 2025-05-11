@@ -2,6 +2,7 @@
 tests for functions in src/upload_utils.py
 """
 #pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
+from datetime import datetime
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
@@ -10,14 +11,21 @@ import pytest
 from src.upload import (
     get_list_of_unprocessed_object_names,
     generate_insert_sql, generate_insert_sql_batch,
-    load_new_single_data, load_slot_events_batch
+    load_new_single_data, load_slot_events_batch,
+    process_single_data
+)
+from src.download import (
+    get_facilities_ids_dict,
+    get_timeslots_ids_dict,
+    get_registration_system_events_ids_dict
 )
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
     GENERATE_INSERT_SQL_TEST_CONSTANT,
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
     LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
-    SAMPLE_EVENTS_DATA
+    SAMPLE_EVENTS_DATA,
+    PROCESS_SINGLE_DATA_TEST_CONSTANT
 )
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
@@ -100,24 +108,28 @@ def test_load_slot_events_batch(conn_fixture):
 
     assert result
 
-# def test_load_slot_events_batch_stale_scraped_datetime(conn_fixture):
-#     """
-#     Test timeslot data load
-#     """
-#     cursor = conn_fixture.cursor()
+@pytest.mark.parametrize("data,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
+def test_process_single_data(conn_fixture, data, expected):
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    facilities_ids_dict = get_facilities_ids_dict(conn_fixture)
+    timeslots_ids_dict = get_timeslots_ids_dict(conn_fixture)
+    events_table_ids_dict = get_registration_system_events_ids_dict(conn_fixture)
 
-#     data = {
-#         'num_people': 1,
-#         'scraped_datetime': datetime.datetime(2024, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-#         'week_number': 6,
-#         'facility_id': 1,
-#         'timeslot_id': 1
-#         }
+    cursor = conn_fixture.cursor()
+    result = process_single_data(
+        data, 
+        facilities_ids_dict,
+        timeslots_ids_dict,
+        events_table_ids_dict,
+        scraped_datetime=datetime.now(),
+        inserted_datetime=datetime.now(),
+        cursor=cursor
+    )
 
-#     try:
-#         _ = load_slot_events_batch(data, cursor)
-#         value_error_raised = False
-#     except ValueError:
-#         value_error_raised = True
-
-#     assert value_error_raised
+    # don't compare scraped_datetime
+    if result is not None:
+        _ = result.pop("scraped_datetime")
+        _ = result.pop("inserted_datetime")
+        assert sorted(result) == sorted(expected)
+    else:
+        assert result is None and expected is None

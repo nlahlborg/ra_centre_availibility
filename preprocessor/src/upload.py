@@ -104,7 +104,11 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
         sql.SQL(placeholders)
     )
 
+    print(stmt.as_string())
+
     values = [tuple(row[col] for col in columns) for row in data_list]
+
+    print(values)
 
     return stmt, values
 
@@ -186,11 +190,10 @@ def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
 
 def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema):
     """
-    wrapper for load_facility. Determines if the data is already in the db 
+    wrapper for load_single_data. Determines if the data is already in the db 
     and if not then uploads
     """
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    #get the facilities id
     #logger.info(f"getting {id_col_name} if it exists")
     idn = ids_dict.get(tuple(data.values()))
     if idn is None:
@@ -201,7 +204,65 @@ def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema
 
     return idn
 
-def load_data(conn, server, dry_run=False, override_s3_bucket=False):
+def process_single_data(
+        data,
+        facilities_ids_dict,
+        timeslots_ids_dict,
+        events_table_ids_dict,
+        cursor,
+        scraped_datetime,
+        inserted_datetime=None,
+    ):
+    """
+    process each data item from the s3 batch. If any new dimensions data are found
+    they will be added to the db transaction as part of this function.
+
+    returns a data item if the processed data is different from the most recent
+    data row. Else it returns none.
+    """
+    # first parse the data
+    #logger.info("parsing single line of data")
+    facilities_data, timeslots_data, events_data = parse_data(data, scraped_datetime)
+
+    # load the facility data if it is unique
+    facility_id = load_new_single_data(
+        data=facilities_data,
+        ids_dict=facilities_ids_dict,
+        table_name="facilities",
+        id_col_name="facility_id",
+        schema="source",
+        cursor=cursor
+    )
+
+    # load the timeslot data if it is unique
+    timeslot_id = load_new_single_data(
+        data=timeslots_data,
+        ids_dict=timeslots_ids_dict,
+        table_name="timeslots",
+        id_col_name="timeslot_id",
+        schema="source",
+        cursor=cursor
+    )
+
+    #include the ids in the events data row
+    # logger.info("creating facts table data packet")
+    events_data["facility_id"] = facility_id
+    events_data["timeslot_id"] = timeslot_id
+    events_data["inserted_datetime"] = inserted_datetime
+    events_data_key = (
+        events_data.get("num_people"),
+        events_data.get("week_number"),
+        events_data.get("facility_id"),
+        events_data.get("timeslot_id"),
+    )
+    if events_data_key not in events_table_ids_dict:
+        ret_val = events_data
+    else:
+        ret_val = None
+
+    return ret_val
+
+def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=False):
     """
     logic for loading all data. Data from each S3 object is loaded as a 
     single transaction
@@ -240,40 +301,17 @@ def load_data(conn, server, dry_run=False, override_s3_bucket=False):
             events_data_list = []
             try:
                 for item in data:
-                    # first parse the data
-                    #logger.info("parsing single line of data")
-                    facilities_data, timeslots_data, events_data = parse_data(item, scraped_datetime)
-
-                    facility_id = load_new_single_data(
-                        data=facilities_data,
-                        ids_dict=facilities_ids_dict,
-                        table_name="facilities",
-                        id_col_name="facility_id",
-                        schema="source",
+                    events_data = process_single_data(
+                        data=item,
+                        scraped_datetime=scraped_datetime,
+                        inserted_datetime=inserted_datetime,
+                        facilities_ids_dict=facilities_ids_dict,
+                        timeslots_ids_dict=timeslots_ids_dict,
+                        events_table_ids_dict=events_table_ids_dict,
                         cursor=cursor
                     )
 
-                    timeslot_id = load_new_single_data(
-                        data=timeslots_data,
-                        ids_dict=timeslots_ids_dict,
-                        table_name="timeslots",
-                        id_col_name="timeslot_id",
-                        schema="source",
-                        cursor=cursor
-                    )
-
-                    #include the ids in the events data row
-                    # logger.info("creating facts table data packet")
-                    events_data["facility_id"] = facility_id
-                    events_data["timeslot_id"] = timeslot_id
-                    events_data["inserted_datetime"] = inserted_datetime
-                    events_data_key = (
-                        events_data.get("num_people"),
-                        events_data.get("week_number"),
-                        events_data.get("facility_id"),
-                        events_data.get("timeslot_id"),
-                    )
-                    if events_data_key not in events_table_ids_dict:
+                    if events_data is not None:
                         events_data_list.append(events_data)
 
                 #batch upload of the facts table data
