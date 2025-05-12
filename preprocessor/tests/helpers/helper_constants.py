@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent.parent))
 import datetime
 from src.setup import RA_CENTRE_TZ, DISPLAY_TZ
+from src.parser import DataValidationError
 
 SAMPLE_RAW_JSON = {
     "ageMaxInYears": 120,
@@ -338,83 +339,104 @@ LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     ),
 )
 
-#(data in, facility_id, timeslot_id, id out)
+#(datas in, ids out)
 LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
-    #slot event exactly matches existing record, with scraped_datetime greater than previous
+    #multiple items
     (
         [
             {
                 'num_people': 1,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 2)),
+                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
                 'week_number': 6,
                 'facility_id': 1,
                 'timeslot_id': 1
-            },
+            }, 
             {
                 'num_people': 0,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 2)),
-                'week_number': 6,
+                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
+                'week_number': 7,
                 'facility_id': 1,
                 'timeslot_id': 1
             }
         ],
-        [1, 2]
+        [4,5]
     ),
-    #slot event exactly matches existing record except num_people, with scraped_datetime greater than previous
+    #just one item
     (
         [
             {
-                'num_people': 1,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 2)),
-                'week_number': 6,
-                'facility_id': 1,
-                'timeslot_id': 1
-            },
-            {
                 'num_people': 0,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 2)),
+                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
                 'week_number': 6,
                 'facility_id': 1,
                 'timeslot_id': 1
             }
         ],
-        [1, 2]
+        [4]
     ),
 )
 
 OLDER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2020,1,1,0,1))
+MEDIUM_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2025,1,27,0,1))
 NEWER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2026,1,1,0,1))
 
-# data,scraped_datetime,xpected_data_dict
+# data,scraped_datetime,expected_data_dict
 PROCESS_SINGLE_DATA_TEST_CONSTANT = (
-    # copy of what's in the db already and scraped_datetime is before start datetime
+    # copy of most recent record in db already and scraped_datetime is before start datetime
     (
-        SAMPLE_RAW_JSON,
-        OLDER_DATETIME,
-        None
-    ),
-    # copy of what's in the db already with just a different number of people
-    (
-        {
+         {
             "facilityName": "Badminton Court 1",
             "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
-            "numPeople": 2,
+            "numPeople": 1,
             "regStart": 1738332000000,
             "schedule": [
                 {
                     "endDatetime": 1738962000000,
-                    "startDatetime": 1738958400000,
-                    "subject": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM"
+                    "startDatetime": 1738958400000
                 }
             ],
         },
-        OLDER_DATETIME,
+        MEDIUM_DATETIME,
+        None
+    ),
+    # copy of what's in the db already and scraped_datetime is after start datetime (invalid)
+    (
         {
-            'num_people': 2,
+            "facilityName": "Badminton Court 1",
+            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+            "numPeople": 1,
+            "regStart": 1738332000000,
+            "schedule": [
+                {
+                    "endDatetime": 1738962000000,
+                    "startDatetime": 1738958400000
+                }
+            ],
+        },
+        NEWER_DATETIME,
+        DataValidationError
+    ),
+    # copy of what's in the db already with a newer scraped datetime but a different number of people
+    (
+        {
+            "facilityName": "Badminton Court 1",
+            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+            "numPeople": 0,
+            "regStart": 1738332000000,
+            "schedule": [
+                {
+                    "endDatetime": 1738962000000,
+                    "startDatetime": 1738958400000
+                }
+            ],
+        },
+        MEDIUM_DATETIME,
+        {
+            'num_people': 0,
             'week_number': 6,
             'facility_id': 1,
             'timeslot_id': 1,
-            'scraped_datetime': OLDER_DATETIME
+            'scraped_datetime': MEDIUM_DATETIME
         }
     ),
     # new facility
@@ -427,18 +449,18 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
             "schedule": [
                 {
                     "endDatetime": 1738962000000,
-                    "startDatetime": 1738958400000,
-                    "subject": "Badminton Court 0 - Friday  Feb 07 - 3:00 PM"
+                    "startDatetime": 1738958400000
                 }
             ],
         },
-        OLDER_DATETIME,
+        MEDIUM_DATETIME,
         {
             'num_people': 1,
             'week_number': 6,
             'facility_id': 2,
             'timeslot_id': 1,
-            'scraped_datetime': OLDER_DATETIME
+            'scraped_datetime': MEDIUM_DATETIME
         }
-    )
+    ),
+    # TODO create a mechanism to upload no data if startdatetime is stale
 )

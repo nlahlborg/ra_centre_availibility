@@ -128,7 +128,18 @@ def load_slot_events_batch(data_list, cursor, schema="source"):
             schema=schema)
         cursor.executemany(stmt, values)
 
-        return True
+        #query the ids of the uploaded data
+        query = f"""
+            SELECT event_id
+            FROM "{schema}".reservation_system_events
+            ORDER BY event_id DESC
+            LIMIT {len(data_list)}
+            """
+        cursor.execute(query)
+        result = cursor.fetchall()
+        event_ids = [x[0] for x in result[::-1]]
+        
+        return event_ids
     except psycopg.Error as e:
         logger.exception(e)
         return False
@@ -277,6 +288,8 @@ def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=Fa
             )
     else:
         logger.info("No new objects found. Will shut down.")
+
+    event_ids = []
     try:
         for object_name in new_objects_list:
             # get the raw data from s3
@@ -295,70 +308,59 @@ def process_and_load_all_data(conn, server, dry_run=False, override_s3_bucket=Fa
             logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
             cursor = conn.cursor()
             events_data_list = []
-            try:
-                for item in data:
-                    events_data = process_single_data(
-                        data=item,
-                        scraped_datetime=scraped_datetime,
-                        inserted_datetime=inserted_datetime,
-                        facilities_ids_dict=facilities_ids_dict,
-                        timeslots_ids_dict=timeslots_ids_dict,
-                        events_table_ids_dict=events_table_ids_dict,
-                        cursor=cursor
-                    )
 
-                    if events_data is not None:
-                        events_data_list.append(events_data)
+            for item in data:
+                events_data = process_single_data(
+                    data=item,
+                    scraped_datetime=scraped_datetime,
+                    inserted_datetime=inserted_datetime,
+                    facilities_ids_dict=facilities_ids_dict,
+                    timeslots_ids_dict=timeslots_ids_dict,
+                    events_table_ids_dict=events_table_ids_dict,
+                    cursor=cursor
+                )
 
-                #batch upload of the facts table data
-                if events_data_list:
-                    logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
-                    load_slot_events_batch(events_data_list, cursor)
-                else:
-                    logger.info("There is no new data to add from this batch.")
-                logger.info("upating the helper table")
-                _ = load_helper_data(object_name, cursor)
+                if events_data is not None:
+                    events_data_list.append(events_data)
 
-                #commit transactions from entire object together otherwise rollback
-                if dry_run:
-                    conn.rollback()
-                    logger.info(f"DRY RUN: did not commit data for {object_name}")
-                else:
-                    logger.info("committing batch")
-                    conn.commit()
-                    logger.info(f"uploaded data for {object_name}")
+            #batch upload of the facts table data
+            if events_data_list:
+                logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
+                event_ids += load_slot_events_batch(events_data_list, cursor)
+            else:
+                logger.info("There is no new data to add from this batch.")
+            logger.info("upating the helper table")
+            _ = load_helper_data(object_name, cursor)
 
-            except psycopg.Error as e:
+            #commit transactions from entire object together otherwise rollback
+            if dry_run:
                 conn.rollback()
-                logger.error(f"Error loading data: {e}")
-            except KeyError as e:
-                conn.rollback()
-                logger.error(f"input data does not have the right format: {e}")
-            except DataValidationError as e:
-                conn.rollback()
-                logger.error(e)
-                raise DataValidationError
-            except Exception:
-                conn.rollback()
-                logger.exception("An unhandled exception occured during the write transaction")
-            finally:
-                cursor.close()
+                logger.info(f"DRY RUN: did not commit data for {object_name}")
+            else:
+                logger.info("committing batch")
+                conn.commit()
+                logger.info(f"uploaded data for {object_name}")
 
-        conn.close()
-        if server:
-            server.stop()
-
-        return True
+            conn.close()
+            if server:
+                server.stop()
     
+    # if there's an exception flush the event_ids list because we're going to rollback everything
     except DataValidationError as e:
         logger.exception(f"A data validation error was detected: {e}")
+        event_ids = []
+    except psycopg.Error as e:
+        logger.exception(f"An error occured with the database: {e}")
+        event_ids = []
+    except Exception as e:
+        logger.exception(f"an unhandled exception occured: {e}")
         conn.close()
         if server:
             server.stop()
-        return False
-    except Exception:
-        logger.exception("an unhandled exception occured ouside of the write transactions")
+        event_ids = []
+    finally:        
         conn.close()
         if server:
             server.stop()
-        return False
+
+    return event_ids

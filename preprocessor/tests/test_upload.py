@@ -9,6 +9,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
 from src.setup import RA_CENTRE_TZ
+from src.parser import DataValidationError
 from src.upload import (
     get_list_of_unprocessed_object_names,
     generate_insert_sql, generate_insert_sql_batch,
@@ -26,7 +27,8 @@ from tests.helpers.helper_constants import (
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
     LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
     SAMPLE_EVENTS_DATA,
-    PROCESS_SINGLE_DATA_TEST_CONSTANT
+    PROCESS_SINGLE_DATA_TEST_CONSTANT,
+    LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT
 )
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
@@ -96,18 +98,16 @@ def test_load_new_single_data(conn_fixture, data, ids_dict, table_name, id_col_n
 
     assert result == expected
 
-def test_load_slot_events_batch(conn_fixture):
+#(data in, facility_id, timeslot_id, id out
+@pytest.mark.parametrize("data_list,expected", LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT)
+def test_load_slot_events_batch(conn_fixture, data_list, expected):
     """
     Test timeslot data load
     """
-    data1 = SAMPLE_EVENTS_DATA.copy()
-    data2 = SAMPLE_EVENTS_DATA.copy()
-    data2["num_people"] = 0
-    data_list = [data1, data2]
     cursor = conn_fixture.cursor()
     result = load_slot_events_batch(data_list, cursor)
 
-    assert result
+    assert result == expected
 
 @pytest.mark.parametrize("data,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
 def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
@@ -120,19 +120,23 @@ def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
     events_table_ids_dict = get_reservation_system_events_ids_dict(conn_fixture)
 
     cursor = conn_fixture.cursor()
-    result = process_single_data(
-        data, 
-        facilities_ids_dict,
-        timeslots_ids_dict,
-        events_table_ids_dict,
-        scraped_datetime=scraped_datetime,
-        inserted_datetime=datetime.now(),
-        cursor=cursor
-    )
+    try:
+        result = process_single_data(
+            data, 
+            facilities_ids_dict,
+            timeslots_ids_dict,
+            events_table_ids_dict,
+            scraped_datetime=scraped_datetime,
+            inserted_datetime=datetime.now(),
+            cursor=cursor
+        )
 
-    # don't compare scraped_datetime
-    if result is not None:
-        _ = result.pop("inserted_datetime")
-        assert sorted(result.items()) == sorted(expected.items())
-    else:
-        assert result is None and expected is None
+        # don't compare scraped_datetime
+        if result is not None:
+            _ = result.pop("inserted_datetime")
+            assert sorted(result.items()) == sorted(expected.items())
+        else:
+            assert result is None and expected is None
+    except DataValidationError:
+        # if a data validation error is detected check that this was expected
+        assert expected == DataValidationError
