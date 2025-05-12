@@ -8,7 +8,6 @@ from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
-from src.setup import RA_CENTRE_TZ
 from src.parser import DataValidationError
 from src.upload import (
     get_list_of_unprocessed_object_names,
@@ -16,17 +15,13 @@ from src.upload import (
     load_new_single_data, load_slot_events_batch,
     process_single_data
 )
-from src.download import (
-    get_facilities_ids_dict,
-    get_timeslots_ids_dict,
-    get_reservation_system_events_ids_dict
-)
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
     GENERATE_INSERT_SQL_TEST_CONSTANT,
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
     LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
-    SAMPLE_EVENTS_DATA,
+    GET_FACILITIES_IDS_DICT_TEST_CONSTANT,
+    GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT,
     PROCESS_SINGLE_DATA_TEST_CONSTANT,
     LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT
 )
@@ -109,15 +104,14 @@ def test_load_slot_events_batch(conn_fixture, data_list, expected):
 
     assert result == expected
 
-@pytest.mark.parametrize("data,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
-def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
+@pytest.mark.parametrize("data,events_table_ids_dict,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
+def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_datetime, expected):
     """
     test function that parses data and uploads any new data to facilities/timeslots table
     """
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    facilities_ids_dict = get_facilities_ids_dict(conn_fixture)
-    timeslots_ids_dict = get_timeslots_ids_dict(conn_fixture)
-    events_table_ids_dict = get_reservation_system_events_ids_dict(conn_fixture)
+    facilities_ids_dict = GET_FACILITIES_IDS_DICT_TEST_CONSTANT
+    timeslots_ids_dict = GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT
 
     cursor = conn_fixture.cursor()
     try:

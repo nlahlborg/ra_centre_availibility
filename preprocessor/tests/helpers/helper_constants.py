@@ -385,7 +385,7 @@ OLDER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2020,1,1,0,1))
 MEDIUM_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2025,1,27,0,1))
 NEWER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2026,1,1,0,1))
 
-# data,scraped_datetime,expected_data_dict
+# data,events_table_ids_dict,scraped_datetime,expected_data_dict
 PROCESS_SINGLE_DATA_TEST_CONSTANT = (
     # copy of most recent record in db already and scraped_datetime is before start datetime
     (
@@ -401,6 +401,7 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
                 }
             ],
         },
+        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
         MEDIUM_DATETIME,
         None
     ),
@@ -418,6 +419,7 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
                 }
             ],
         },
+        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
         NEWER_DATETIME,
         DataValidationError
     ),
@@ -435,6 +437,7 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
                 }
             ],
         },
+        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
         MEDIUM_DATETIME,
         {
             'num_people': 0,
@@ -458,6 +461,7 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
                 }
             ],
         },
+        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
         MEDIUM_DATETIME,
         {
             'num_people': 1,
