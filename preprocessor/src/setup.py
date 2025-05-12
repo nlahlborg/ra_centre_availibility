@@ -15,9 +15,10 @@ import dotenv
 
 logger = logging.getLogger(__name__)
 
-RA_CENTRE_TZ = pytz.utc # timestamps from RA center website are in UTC
-LOCAL_TZ = pytz.timezone('US/Pacific')
-DISPLAY_TZ = pytz.timezone("America/Toronto")
+WEB_DISPLAY_TZ = pytz.timezone("America/Toronto") # website display tz
+API_TZ = pytz.utc # timestamps from RA center website are in UTC
+DB_TZ = pytz.utc # timestamps are stored in the DB as UTC
+LOCAL_TZ = pytz.timezone('US/Pacific') # used for convenience in displaying logs
 
 ENV = os.environ.get("ENV", "dev")
 

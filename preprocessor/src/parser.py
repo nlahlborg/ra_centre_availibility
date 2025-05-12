@@ -7,11 +7,11 @@ with specific columns. The module also includes helper functions to generate uni
 slot IDs and determine facility types.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import logging
 
-from src.setup import RA_CENTRE_TZ as TZ, DISPLAY_TZ
+from src.setup import API_TZ, WEB_DISPLAY_TZ, DB_TZ
 
 logger = logging.getLogger("data_parser")
 
@@ -21,7 +21,7 @@ class DataValidationError(Exception):
     """
     pass
 
-def get_tz_aware_datetime(timestamp: int, tz=TZ) -> datetime:
+def get_tz_aware_datetime(timestamp: int, tz=API_TZ) -> datetime:
     """
     converts a timestamp to timezone aware datetime
     """
@@ -45,7 +45,7 @@ def get_facility_type(facility_name: str) -> str:
 
     return facility_type
 
-def parse_object_name(object_name, prefix="raw_centre_raw_"):
+def parse_object_name(object_name, prefix="raw_centre_raw_", tz=DB_TZ):
     """
     extract the date strong from the object name
 
@@ -57,25 +57,24 @@ def parse_object_name(object_name, prefix="raw_centre_raw_"):
     try:
         date_string = object_name.split(prefix)[-1]
         date_string = date_string.split(".json")[0]
-        return TZ.localize(datetime.strptime(date_string, "%Y%m%dT%H%M%SZ"))
+        return tz.localize(datetime.strptime(date_string, "%Y%m%dT%H%M%SZ"))
 
     except ValueError as e:
         logger.error(f"received incorrectly formatted object name {object_name}")
         raise e
 
-def parse_displayname(display_name:str, year: int) -> datetime:
+def parse_displayname(display_name:str, year: int, display_tz=WEB_DISPLAY_TZ) -> datetime:
     """
     get the datetime from the displayname
     """
+    # split string based on "-" and " "
     parts = display_name.split('-')
     date_part = parts[1].strip().split(' ', maxsplit=1)[-1].strip()
     time_part = parts[2].strip()
-    
-    # Combine the parts into a datetime string format
-    
+        
     # Parse the datetime string
     datetime_str = f"{date_part} {year} {time_part}"
-    retvar = DISPLAY_TZ.localize(datetime.strptime(datetime_str, "%b %d %Y %I:%M %p"))
+    retvar = display_tz.localize(datetime.strptime(datetime_str, "%b %d %Y %I:%M %p"))
     
     return retvar
 
@@ -91,10 +90,10 @@ def flag_inconsistant_datetime(start_datetime: datetime, display_name: str) -> N
 
 def flag_stale_start_datetime(start_datetime: datetime, scraped_datetime: datetime) -> None:
     """
-    raise a DataValidationError if the start datetime is stale
+    raise a DataValidationError if the start datetime is stale by more than 1 day
     """
-    if start_datetime < scraped_datetime:
-        logger.error("reservation slot start_datetime is less than the scraped_datetime, which is invalid")
+    if  (scraped_datetime - start_datetime) > timedelta(days=1):
+        logger.error(f"reservation slot start_datetime {start_datetime} is less than the scraped_datetime {scraped_datetime}, which is invalid")
         raise DataValidationError
 
 def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
@@ -107,50 +106,44 @@ def parse_data(data: dict, scraped_datetime: datetime) -> dict | None:
     Returns:
         a flat key-value dict
     """
-    try:
-        display_name = data.get("name")
-        schedule = data.get("schedule")  # Get the schedule (might be None)
-        # Check if schedule exists, is list and is not empty
-        if schedule and isinstance(schedule, list) and schedule:
-            schedule_item = schedule[0] # Get the first schedule item.
-            if schedule_item.get("startDatetime"):
-                start_datetime = get_tz_aware_datetime(schedule_item["startDatetime"])
-            else:
-                start_datetime = None
-            if schedule_item.get("endDatetime"):
-                end_datetime =get_tz_aware_datetime(schedule_item["endDatetime"])
-            else:
-                end_datetime = None
+    display_name = data.get("name")
+    schedule = data.get("schedule")  # Get the schedule (might be None)
+    # Check if schedule exists, is list and is not empty
+    if schedule and isinstance(schedule, list) and schedule:
+        schedule_item = schedule[0] # Get the first schedule item.
+        if schedule_item.get("startDatetime"):
+            start_datetime = get_tz_aware_datetime(schedule_item["startDatetime"], tz=API_TZ)
         else:
             start_datetime = None
+        if schedule_item.get("endDatetime"):
+            end_datetime =get_tz_aware_datetime(schedule_item["endDatetime"])
+        else:
             end_datetime = None
+    else:
+        start_datetime = None
+        end_datetime = None
 
-        facilities_data = {
-            "facility_name": data.get("facilityName"),
-            "facility_type": get_facility_type(data.get("facilityName")),
-            }
-
-        timeslot_data = {
-            "start_time": start_datetime.timetz(),
-            "end_time": end_datetime.timetz(),
-            "day_of_week": start_datetime.strftime("%A"),
-            "release_interval_days": (
-                start_datetime - get_tz_aware_datetime(data.get("regStart"))).days
+    facilities_data = {
+        "facility_name": data.get("facilityName"),
+        "facility_type": get_facility_type(data.get("facilityName")),
         }
 
-        event_data = {
-            "num_people": data.get("numPeople"),
-            "scraped_datetime": scraped_datetime,
-            "week_number": start_datetime.isocalendar()[1],
-            "inserted_datetime": datetime.now(tz=TZ),
-        }
+    timeslot_data = {
+        "start_time": start_datetime.astimezone(DB_TZ).timetz(),
+        "end_time": end_datetime.astimezone(DB_TZ).timetz(),
+        "day_of_week": start_datetime.astimezone(DB_TZ).strftime("%A"),
+        "release_interval_days": (
+            start_datetime - get_tz_aware_datetime(data.get("regStart"), tz=API_TZ)).days
+    }
 
-        #error checking
-        flag_inconsistant_datetime(start_datetime, display_name)
-        flag_stale_start_datetime(start_datetime, scraped_datetime)
+    event_data = {
+        "num_people": data.get("numPeople"),
+        "scraped_datetime": scraped_datetime.astimezone(DB_TZ),
+        "week_number": start_datetime.astimezone(DB_TZ).isocalendar()[1]
+    }
 
-        return facilities_data, timeslot_data, event_data
+    #error checking
+    flag_inconsistant_datetime(start_datetime, display_name)
+    flag_stale_start_datetime(start_datetime, scraped_datetime)
 
-    except (ValueError, TypeError, KeyError) as e:
-        logger.warning(f"Error processing item: {data.get('name')}. Error: {e}") #pylint: disable=logging-fstring-interpolation
-        return None, None, None
+    return facilities_data, timeslot_data, event_data

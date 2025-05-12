@@ -6,8 +6,12 @@ import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent.parent))
 import datetime
-from src.setup import RA_CENTRE_TZ, DISPLAY_TZ
+from src.setup import API_TZ, WEB_DISPLAY_TZ, DB_TZ
 from src.parser import DataValidationError
+
+OLDER_DATETIME = DB_TZ.localize(datetime.datetime(2020,1,1,0,1))
+MEDIUM_DATETIME = DB_TZ.localize(datetime.datetime(2025,1,27,0,1))
+NEWER_DATETIME = DB_TZ.localize(datetime.datetime(2026,1,1,0,1))
 
 SAMPLE_RAW_JSON = {
     "ageMaxInYears": 120,
@@ -60,13 +64,13 @@ SAMPLE_RAW_JSON = {
 
 SAMPLE_PARSED_DATA = {
     'day_of_week': 'Friday',
-    'end_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+    'end_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
     'facility_name': 'Badminton Court 1',
     'facility_type': 'badminton_court',
     'num_people': 1,
     'release_interval_days': 7,
-    'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
-    'start_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+    'scraped_datetime': DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
+    'start_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
     'week_number': 6
 }
 
@@ -76,15 +80,15 @@ SAMPLE_FACILITIES_DATA = {
 }
 
 SAMPLE_TIMESLOTS_DATA = {
-    'start_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
-    'end_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+    'start_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+    'end_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
     'day_of_week': 'Friday',
     'release_interval_days': 7
 }
 
 SAMPLE_EVENTS_DATA = {
     'num_people': 1,
-    'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
+    'scraped_datetime': DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
     'week_number': 6,
 }
 
@@ -111,8 +115,8 @@ GET_FACILITIES_IDS_DICT_TEST_CONSTANT = {
 
 GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT = {
     (
-        RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
-        RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+        DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+        DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
         'Friday',
         7
     ): 1
@@ -135,13 +139,13 @@ PARSE_OBJECT_NAME_TEST_CONSTANT = (
     (
         "raw_centre_raw_20250126T000200Z.json", 
         "raw_centre_raw_", 
-        RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 0, 2, 0))
+        DB_TZ.localize(datetime.datetime(2025, 1, 26, 0, 2, 0))
     ),
     #yes daylight savings
     (
         "raw_centre_raw_20250502T020513Z.json", 
         "raw_centre_raw_", 
-        RA_CENTRE_TZ.localize(datetime.datetime(2025, 5, 2, 2, 5, 13))
+        DB_TZ.localize(datetime.datetime(2025, 5, 2, 2, 5, 13))
     )
 )
 
@@ -149,7 +153,7 @@ PARSE_OBJECT_NAME_TEST_CONSTANT = (
 PARSE_DATA_TEST_CONSTANT = (
     (
         SAMPLE_RAW_JSON,
-        RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
+        DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
         SAMPLE_FACILITIES_DATA,
         SAMPLE_TIMESLOTS_DATA,
         SAMPLE_EVENTS_DATA
@@ -160,31 +164,65 @@ PARSE_DISPLAY_NAME_TEST_CONSTANT = (
     (
         "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
         2025,
-        DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
     ),    
     (
         "Badminton Court 1 - Friday Feb 07 - 3:00 PM",
         2025,
-        DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
     ),    
     (
         "Pickleball Centre - Friday Feb 07 - 3:00 PM",
         2025,
-        DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
     ),
     (
         "Photo Studio Booking- Saturday  Apr 26 - 7:00 AM",
         2025,
-        DISPLAY_TZ.localize(datetime.datetime(2025, 4, 26, 7, 0))
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 4, 26, 7, 0))
     )
 )
 
 FLAG_INCONSISTANT_DATETIME_TEST_CONSTANT = (
-
+    # correct flagging of correct parsing
+    (
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0)),
+        "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+        True
+    ),
+    # assuming an incorrect timezone for the startdatetime will produce an error
+    (
+        API_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0)),
+        "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+        DataValidationError
+    ),
+    # A startdatetime that is inconsistent with the displayname will produce an error
+    (
+        WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 12, 0)),
+        "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+        DataValidationError
+    ),
 )
 
 FLAG_STALE_START_DATETIME_TEST_CONSTANT = (
-    
+    #scraped_datetime is older than start_datetime
+    (
+        API_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0)),
+        OLDER_DATETIME,
+        True
+    ),
+    #scraped_datetime is newer than start_datetime by less than 1 day
+    (
+        API_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0)),
+        API_TZ.localize(datetime.datetime(2025, 2, 7, 15, 1)),
+        True
+    ),
+    #scraped_datetime is newer than start_datetime by more than 1 day
+    (
+        API_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0)),
+        NEWER_DATETIME,
+        DataValidationError
+    ),
 )
 
 # (object_names_in, filepath, expected)
@@ -253,8 +291,8 @@ GENERATE_INSERT_SQL_TEST_CONSTANT = (
             RETURNING timeslot_id
         """,
         (
-            RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
-            RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+            DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+            DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
             'Friday',
             7
         )
@@ -268,8 +306,8 @@ GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT = (
         '''INSERT INTO "source"."reservation_system_events" ("num_people", "scraped_datetime", "week_number")
             VALUES (%s, %s, %s)''',
         [
-            (1, RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)), 6),
-            (1, RA_CENTRE_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)), 6)
+            (1, DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)), 6),
+            (1, DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)), 6)
         ]
     ),
 )
@@ -303,15 +341,15 @@ LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     #timeslot already matches existing id = 1
     (
         {
-            'start_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
-            'end_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+            'start_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+            'end_time': DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
             'day_of_week': 'Friday',
             'release_interval_days': 7,
         },
         {
             (
-                RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
-                RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
+                DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
+                DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
                 "Friday",
                 7
             ): 1
@@ -324,15 +362,15 @@ LOAD_NEW_SINGLE_DATA_TEST_CONSTANT = (
     #timeslot doesn't matches existing id = 1
     (
         {
-            'start_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 8, 20, 0)).timetz(),
-            'end_time': RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 8, 21, 0)).timetz(),
+            'start_time': DB_TZ.localize(datetime.datetime(2025, 2, 8, 20, 0)).timetz(),
+            'end_time': DB_TZ.localize(datetime.datetime(2025, 2, 8, 21, 0)).timetz(),
             'day_of_week': 'Saturday',
             'release_interval_days': 7,
         },
         {
             (
-                RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 8, 20, 0)).timetz(),
-                RA_CENTRE_TZ.localize(datetime.datetime(2025, 2, 8, 21, 0)).timetz(),
+                DB_TZ.localize(datetime.datetime(2025, 2, 8, 20, 0)).timetz(),
+                DB_TZ.localize(datetime.datetime(2025, 2, 8, 21, 0)).timetz(),
                 "Friday",
                 7
             ): 1
@@ -351,14 +389,14 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
         [
             {
                 'num_people': 1,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
+                'scraped_datetime': DB_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
                 'week_number': 6,
                 'facility_id': 1,
                 'timeslot_id': 1
             }, 
             {
                 'num_people': 0,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
+                'scraped_datetime': DB_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
                 'week_number': 7,
                 'facility_id': 1,
                 'timeslot_id': 1
@@ -371,7 +409,7 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
         [
             {
                 'num_people': 0,
-                'scraped_datetime': RA_CENTRE_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
+                'scraped_datetime': DB_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),
                 'week_number': 6,
                 'facility_id': 1,
                 'timeslot_id': 1
@@ -380,10 +418,6 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
         [4]
     ),
 )
-
-OLDER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2020,1,1,0,1))
-MEDIUM_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2025,1,27,0,1))
-NEWER_DATETIME = RA_CENTRE_TZ.localize(datetime.datetime(2026,1,1,0,1))
 
 # data,events_table_ids_dict,scraped_datetime,expected_data_dict
 PROCESS_SINGLE_DATA_TEST_CONSTANT = (
@@ -472,4 +506,108 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
         }
     ),
     # TODO create a mechanism to upload no data if startdatetime is stale
+)
+
+# data, object_name, expected
+PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
+    # basecase: both are new data and the startdatetimes are not stale
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+                "numPeople": 2,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1738962000000,
+                        "startDatetime": 1738958400000
+                    }
+                ],
+            },
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+                "numPeople": 2,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1739566800000,
+                        "startDatetime": 1739563200000
+                    }
+                ],
+            },
+        ],
+        "raw_centre_raw_20250126T000200Z.json",
+        [4,5]
+    ),
+    # both data are repeats of the previous row and the startdatetimes are not stale
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+                "numPeople": 1,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1738962000000,
+                        "startDatetime": 1738958400000
+                    }
+                ],
+            },
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+                "numPeople": 0,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1739566800000,
+                        "startDatetime": 1739563200000
+                    }
+                ],
+            },
+        ],
+        "raw_centre_raw_20250126T000200Z.json",
+        []
+    ),
+    # single data is a repeat
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+                "numPeople": 1,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1738962000000,
+                        "startDatetime": 1738958400000
+                    }
+                ],
+            }
+        ],
+        "raw_centre_raw_20250126T000200Z.json",
+        []
+    ),
+    # single data is a repeat
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+                "numPeople": 0,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1739566800000,
+                        "startDatetime": 1739563200000
+                    }
+                ],
+            },
+        ],
+        "raw_centre_raw_20250126T000200Z.json",
+        []
+    ),
 )

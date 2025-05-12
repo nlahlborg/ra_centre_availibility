@@ -9,8 +9,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 import logging
-from src.setup import db_connect, load_env_file, LOCAL_TZ
-from src.upload import process_and_load_all_data
+from src.setup import db_connect, load_env_file, get_s3_bucket, LOCAL_TZ, DB_TZ
+from src.parser import DataValidationError
+from psycopg import Error as PostgreSQLError
+from src.download import get_s3_object_names, get_s3_json_data
+from src.upload import get_list_of_unprocessed_object_names, process_and_load_batch_data
 
 LOG_TO_FILE = os.environ.get("LOG_TO_FILE", False)
 
@@ -63,6 +66,8 @@ def main(dry_run=True, override_s3_bucket=False):
         otherwise empty list
     
     """
+    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements
+
     #setup env and connections
     _ = load_env_file(str(Path(__file__).parent) + "/.env")
     logger.info("connecting to DB.")
@@ -71,7 +76,49 @@ def main(dry_run=True, override_s3_bucket=False):
     retvar = False
     if conn:
         logger.info("DB connection established.")
-        retvar = process_and_load_all_data(conn, server, dry_run, override_s3_bucket)
+        
+        inserted_datetime = datetime.now(tz=DB_TZ)
+        logger.info("retreiving list of available S3 objects")
+        s3_bucket = get_s3_bucket(override_s3_bucket)
+        objects_list = get_s3_object_names(bucket=s3_bucket)
+        new_objects_list = get_list_of_unprocessed_object_names(objects_list, conn)
+
+        if new_objects_list:
+            logger.info(
+                f"preparing to process {len(new_objects_list)} "
+                f"new objects out of {len(objects_list)}."
+                )
+        else:
+            logger.info("No new objects found. Will shut down.")
+
+        event_ids = []
+        try:
+            for object_name in new_objects_list:
+                # get the raw data from s3
+                logger.info(f"retreiving single s3 object {object_name}")
+                data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
+                
+                event_ids += process_and_load_batch_data(data, object_name, inserted_datetime, conn, dry_run=dry_run)
+
+        # if there's an exception flush the event_ids list because we're going to rollback everything
+        except DataValidationError as e:
+            logger.exception(f"A data validation error was detected: {e}")
+            event_ids = []
+        except PostgreSQLError as e:
+            logger.exception(f"An error occured with the database: {e}")
+            event_ids = []
+        except Exception as e:
+            logger.exception(f"an unhandled exception occured: {e}")
+            conn.close()
+            if server:
+                server.stop()
+            event_ids = []
+        finally:        
+            conn.close()
+            if server:
+                server.stop()
+
+        return event_ids
     else:
         logger.error("No DB Connection")
     return retvar

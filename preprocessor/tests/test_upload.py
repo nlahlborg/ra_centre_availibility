@@ -13,7 +13,8 @@ from src.upload import (
     get_list_of_unprocessed_object_names,
     generate_insert_sql, generate_insert_sql_batch,
     load_new_single_data, load_slot_events_batch,
-    process_single_data
+    process_single_data,
+    process_and_load_batch_data
 )
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
@@ -23,7 +24,8 @@ from tests.helpers.helper_constants import (
     GET_FACILITIES_IDS_DICT_TEST_CONSTANT,
     GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT,
     PROCESS_SINGLE_DATA_TEST_CONSTANT,
-    LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT
+    LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT,
+    PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT
 )
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
@@ -134,3 +136,16 @@ def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_
     except DataValidationError:
         # if a data validation error is detected check that this was expected
         assert expected == DataValidationError
+
+@pytest.mark.parametrize("data,object_name,expected", PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT)
+def test_process_and_load_batch_data(conn_fixture, data, object_name, expected):
+    """
+    test function that parses data and uploads any new data to facilities/timeslots table
+    """
+    result = process_and_load_batch_data(
+        data=data,
+        object_name=object_name,
+        conn=conn_fixture,
+        dry_run=False)
+    
+    assert result == expected
