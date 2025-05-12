@@ -171,6 +171,11 @@ PARSE_DISPLAY_NAME_TEST_CONSTANT = (
         "Pickleball Centre - Friday Feb 07 - 3:00 PM",
         2025,
         DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
+    ),
+    (
+        "Photo Studio Booking- Saturday  Apr 26 - 7:00 AM",
+        2025,
+        DISPLAY_TZ.localize(datetime.datetime(2025, 4, 26, 7, 0))
     )
 )
 
