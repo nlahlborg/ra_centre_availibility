@@ -67,9 +67,7 @@ def parse_displayname(display_name:str, year: int) -> datetime:
     """
     get the datetime from the displayname
     """
-    print(display_name)
     parts = display_name.split('-')
-    print(parts)
     date_part = parts[1].strip().split(' ', maxsplit=1)[-1].strip()
     time_part = parts[2].strip()
     
