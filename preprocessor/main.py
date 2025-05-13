@@ -98,7 +98,12 @@ def main(dry_run=True, override_s3_bucket=False):
                 logger.info(f"retreiving single s3 object {object_name}")
                 data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
                 
-                event_ids += process_and_load_batch_data(data, object_name, inserted_datetime, conn, dry_run=dry_run)
+                event_ids += process_and_load_batch_data(
+                    data=data, 
+                    object_name=object_name, 
+                    inserted_datetime=inserted_datetime, 
+                    conn=conn, 
+                    dry_run=dry_run)
 
         # if there's an exception flush the event_ids list because we're going to rollback everything
         except DataValidationError as e:
@@ -127,4 +132,4 @@ if __name__ == "__main__":
     # set a local variable to prod and call this main script to do manual initial
     # DB population or manual backfils
     #ra-center-raw-data-prod
-    _ = main(dry_run=False, override_s3_bucket="ra-center-raw-data-prod")
+    _ = main(dry_run=False)
