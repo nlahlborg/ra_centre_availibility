@@ -94,6 +94,14 @@ SAMPLE_EVENTS_DATA = {
 
 #min start_datetime, expected
 GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT = (
+    # basecase valid mindatetime provided
+    (
+        '20250126T000200Z',
+        [
+            (2, 1, 6, 1, 1),
+            (3, 0, 7, 1, 1),
+        ]
+    ),
     #no start time provided
     (
         None,
@@ -158,6 +166,33 @@ PARSE_DATA_TEST_CONSTANT = (
         SAMPLE_TIMESLOTS_DATA,
         SAMPLE_EVENTS_DATA
     ),
+    (
+        {
+            "facilityName": "Badminton Court 1",
+            "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+            "numPeople": 0,
+            "regStart": 1738929600000,
+            "schedule": [
+                {
+                    "endDatetime": 1739566800000,
+                    "startDatetime": 1739563200000
+                }
+            ],
+        },
+        DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
+        SAMPLE_FACILITIES_DATA,
+        {
+            'start_time': DB_TZ.localize(datetime.datetime(2025, 2, 14, 20, 0)).timetz(),
+            'end_time': DB_TZ.localize(datetime.datetime(2025, 2, 14, 21, 0)).timetz(),
+            'day_of_week': 'Friday',
+            'release_interval_days': 7
+        },
+        {
+            'num_people': 0,
+            'scraped_datetime': DB_TZ.localize(datetime.datetime(2025, 1, 26, 7, 2)),
+            'week_number': 7,
+        }
+    )
 )
 
 PARSE_DISPLAY_NAME_TEST_CONSTANT = (
@@ -529,7 +564,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 "facilityName": "Badminton Court 1",
                 "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
                 "numPeople": 2,
-                "regStart": 1738332000000,
+                "regStart": 1738929600000,
                 "schedule": [
                     {
                         "endDatetime": 1739566800000,
@@ -560,7 +595,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 "facilityName": "Badminton Court 1",
                 "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
                 "numPeople": 0,
-                "regStart": 1738332000000,
+                "regStart": 1738929600000,
                 "schedule": [
                     {
                         "endDatetime": 1739566800000,
@@ -598,7 +633,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 "facilityName": "Badminton Court 1",
                 "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
                 "numPeople": 0,
-                "regStart": 1738332000000,
+                "regStart": 1738929600000,
                 "schedule": [
                     {
                         "endDatetime": 1739566800000,

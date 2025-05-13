@@ -213,6 +213,19 @@ def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema
 
     return idn
 
+def get_events_data_key(data):
+    """
+    create a tuple of the natural key for the reservation system events table
+    """
+    retval = (
+        data.get("num_people"),
+        data.get("week_number"),
+        data.get("facility_id"),
+        data.get("timeslot_id"),
+    )
+
+    return retval
+
 def process_single_data(
         data,
         facilities_ids_dict,
@@ -256,12 +269,7 @@ def process_single_data(
     # logger.info("creating facts table data packet")
     events_data["facility_id"] = facility_id
     events_data["timeslot_id"] = timeslot_id
-    events_data_key = (
-        events_data.get("num_people"),
-        events_data.get("week_number"),
-        events_data.get("facility_id"),
-        events_data.get("timeslot_id"),
-    )
+    events_data_key = get_events_data_key(events_data)
     if events_data_key not in events_table_ids_dict:
         ret_val = events_data
     else:
@@ -303,6 +311,11 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     if events_data_list:
         logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
         event_ids += load_slot_events_batch(events_data_list, cursor)
+        #update the events natural key dict
+        for idx in range(len(event_ids)):
+            print(f"idx: {idx}, event_ids: {event_ids[idx]}")
+            print(events_data_list[idx])
+            events_table_ids_dict[get_events_data_key(events_data_list[idx])] = event_ids[idx]    
     else:
         logger.info("There is no new data to add from this batch.")
     logger.info("upating the helper table")

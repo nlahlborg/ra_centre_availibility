@@ -105,6 +105,7 @@ def test_load_slot_events_batch(conn_fixture, data_list, expected):
     result = load_slot_events_batch(data_list, cursor)
 
     assert result == expected
+    assert len(result) == len(data_list)
 
 @pytest.mark.parametrize("data,events_table_ids_dict,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
 def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_datetime, expected):
@@ -123,13 +124,11 @@ def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_
             timeslots_ids_dict,
             events_table_ids_dict,
             scraped_datetime=scraped_datetime,
-            inserted_datetime=datetime.now(),
             cursor=cursor
         )
 
         # don't compare scraped_datetime
         if result is not None:
-            _ = result.pop("inserted_datetime")
             assert sorted(result.items()) == sorted(expected.items())
         else:
             assert result is None and expected is None
