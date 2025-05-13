@@ -8,15 +8,16 @@ from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
+from tests.common import clear_starter_data
 from src.download import (
     get_sql_facilities_table, get_sql_reservation_system_events_table,
-    get_sql_timeslots_table, get_facilities_ids_dict,
-    get_timeslots_ids_dict, get_reservation_system_events_ids_dict
+    get_sql_timeslots_table, get_facility_ids_dict,
+    get_timeslot_ids_dict, get_reservation_system_events_ids_dict
 )
 from tests.helpers.helper_constants import (
     SAMPLE_FACILITIES_DATA, SAMPLE_TIMESLOTS_DATA, SAMPLE_EVENTS_DATA,
     GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT,
-    GET_FACILITIES_IDS_DICT_TEST_CONSTANT, GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT,
+    GET_facility_ids_dict_TEST_CONSTANT, get_timeslot_ids_dict_TEST_CONSTANT,
     GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
 )
 
@@ -47,21 +48,21 @@ def test_get_sql_reservation_system_events_table_base(conn_fixture, min_start_da
 
     assert result == expected
 
-def test_get_facilities_ids_dict(conn_fixture):
+def test_get_facility_ids_dict(conn_fixture):
     """
     test list comprehension of facilities table
     """
-    result = get_facilities_ids_dict(conn_fixture)
-    expected = GET_FACILITIES_IDS_DICT_TEST_CONSTANT
+    result = get_facility_ids_dict(conn_fixture)
+    expected = GET_facility_ids_dict_TEST_CONSTANT
 
     assert result == expected
 
-def test_get_timeslots_ids_dict(conn_fixture):
+def test_get_timeslot_ids_dict(conn_fixture):
     """
     test list comprehension of facilities table
     """
-    result = get_timeslots_ids_dict(conn_fixture)
-    expected = GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT
+    result = get_timeslot_ids_dict(conn_fixture)
+    expected = get_timeslot_ids_dict_TEST_CONSTANT
 
     assert result == expected
 
@@ -73,3 +74,13 @@ def test_get_reservation_system_events_ids_dict(conn_fixture):
     expected = GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT
 
     assert result == expected
+
+def test_table_gets_cleared(conn_fixture):
+    cursor = conn_fixture.cursor()
+    clear_starter_data(cursor)
+    cursor.close()
+    conn_fixture.commit()
+
+    assert get_facility_ids_dict(conn_fixture) == {}
+    assert get_timeslot_ids_dict(conn_fixture) == {}
+    assert get_reservation_system_events_ids_dict(conn_fixture) == {}

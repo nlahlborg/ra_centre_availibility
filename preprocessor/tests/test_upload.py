@@ -8,6 +8,7 @@ sys.path.insert(1, str(Path(__file__).parent.parent))
 import logging
 import pytest
 
+from tests.common import clear_starter_data
 from src.parser import DataValidationError
 from src.upload import (
     get_list_of_unprocessed_object_names,
@@ -21,8 +22,8 @@ from tests.helpers.helper_constants import (
     GENERATE_INSERT_SQL_TEST_CONSTANT,
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
     LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
-    GET_FACILITIES_IDS_DICT_TEST_CONSTANT,
-    GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT,
+    GET_facility_ids_dict_TEST_CONSTANT,
+    get_timeslot_ids_dict_TEST_CONSTANT,
     PROCESS_SINGLE_DATA_TEST_CONSTANT,
     LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT,
     PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT,
@@ -116,14 +117,14 @@ def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
     test function that parses data and uploads any new data to facilities/timeslots table
     """
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    facilities_ids_dict = GET_FACILITIES_IDS_DICT_TEST_CONSTANT
-    timeslots_ids_dict = GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT
+    facility_ids_dict = GET_facility_ids_dict_TEST_CONSTANT
+    timeslots_ids_dict = get_timeslot_ids_dict_TEST_CONSTANT
 
     cursor = conn_fixture.cursor()
     try:
         result = process_single_data(
             data, 
-            facilities_ids_dict,
+            facility_ids_dict,
             timeslots_ids_dict,
             scraped_datetime=scraped_datetime,
             cursor=cursor
@@ -168,3 +169,17 @@ def test_process_and_load_batch_consecutive(conn_fixture, data, object_name1, ob
 
     assert result1 == expected1
     assert result2 == expected2
+
+# def test_batch_upload_to_empty_db(conn_fixture, data, object_name, expected):
+#     object_name = raw_json_path.name
+
+#     cursor = conn_fixture.cursor()
+#     clear_starter_data(cursor)
+#     cursor.close()
+#     result = process_and_load_batch_data(
+#         data=json_data,
+#         object_name=object_name,
+#         conn = conn_fixture
+#         )
+
+#     assert len(json_data) == len(result)

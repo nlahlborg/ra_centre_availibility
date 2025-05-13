@@ -161,7 +161,7 @@ def get_sql_reservation_system_events_table(conn, min_start_datetime=None, schem
 
     return data
 
-def get_facilities_ids_dict(conn, schema="source"):
+def get_facility_ids_dict(conn, schema="source"):
     """
     wrapper for get_sql_facilities_table
     returns a dictionary of unique table values
@@ -169,7 +169,7 @@ def get_facilities_ids_dict(conn, schema="source"):
 
     return {tuple(row[1:]): row[0] for row in get_sql_facilities_table(conn, schema)}
 
-def get_timeslots_ids_dict(conn, schema="source"):
+def get_timeslot_ids_dict(conn, schema="source"):
     """
     wrapper for get_sql_timeslots_table
     returns a dictionary of unique table values

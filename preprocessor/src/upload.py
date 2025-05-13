@@ -9,7 +9,7 @@ from psycopg import sql
 
 from src.parser import parse_data, parse_object_name, DataValidationError
 from src.download import (
-    get_facilities_ids_dict, get_timeslots_ids_dict,
+    get_facility_ids_dict, get_timeslot_ids_dict,
     get_reservation_system_events_ids_dict,
     get_last_scraped_datetime
     )
@@ -237,7 +237,7 @@ def get_events_data_key(data):
 
 def process_single_data(
         data,
-        facilities_ids_dict,
+        facility_ids_dict,
         timeslots_ids_dict,
         cursor,
         scraped_datetime
@@ -256,7 +256,7 @@ def process_single_data(
     # load the facility data if it is unique
     facility_id = load_new_single_data(
         data=facilities_data,
-        ids_dict=facilities_ids_dict,
+        ids_dict=facility_ids_dict,
         table_name="facilities",
         id_col_name="facility_id",
         schema="source",
@@ -286,9 +286,12 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
 
     # load the existing tables from the db to compare in memory
     logger.info("loading db subsets")
-    facilities_ids_dict = get_facilities_ids_dict(conn)
-    timeslots_ids_dict = get_timeslots_ids_dict(conn)
+    facility_ids_dict = get_facility_ids_dict(conn)
+    logger.info(f"facility ids: {facility_ids_dict}")
+    timeslots_ids_dict = get_timeslot_ids_dict(conn)
+    logger.info(f"timeslot ids: {timeslots_ids_dict}")
     events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
+    logger.info(f"events ids: {events_table_ids_dict}")
     if len(events_table_ids_dict) > 0:
         last_scraped_datetime = get_last_scraped_datetime(conn)
     else:
@@ -306,7 +309,7 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
         events_data = process_single_data(
             data=item,
             scraped_datetime=scraped_datetime,
-            facilities_ids_dict=facilities_ids_dict,
+            facility_ids_dict=facility_ids_dict,
             timeslots_ids_dict=timeslots_ids_dict,
             cursor=cursor
         )
@@ -321,6 +324,7 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     if events_data_list:
         logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
         event_ids += load_slot_events_batch(events_data_list, cursor)
+        logger.info(f"events data \n{events_data_list}")
     else:
         logger.info("There is no new data to add from this batch.")
     logger.info("upating the helper table")

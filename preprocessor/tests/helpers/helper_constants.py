@@ -117,11 +117,11 @@ GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT = (
     ),
 )
 
-GET_FACILITIES_IDS_DICT_TEST_CONSTANT = {
+GET_facility_ids_dict_TEST_CONSTANT = {
     ('Badminton Court 1', 'badminton_court'): 1
 }
 
-GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT = {
+get_timeslot_ids_dict_TEST_CONSTANT = {
     (
         DB_TZ.localize(datetime.datetime(2025, 2, 7, 20, 0)).timetz(),
         DB_TZ.localize(datetime.datetime(2025, 2, 7, 21, 0)).timetz(),
@@ -635,6 +635,60 @@ PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT = (
         "raw_centre_raw_20250126T070300Z.json",
         "raw_centre_raw_20250126T070500Z.json",
         [4,5],
+        []
+    ),
+    # neither are new data
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+                "numPeople": 1,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1738962000000,
+                        "startDatetime": 1738958400000
+                    }
+                ],
+            },
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+                "numPeople": 0,
+                "regStart": 1738929600000,
+                "schedule": [
+                    {
+                        "endDatetime": 1739566800000,
+                        "startDatetime": 1739563200000
+                    }
+                ],
+            },
+        ],
+        "raw_centre_raw_20250126T070300Z.json",
+        "raw_centre_raw_20250126T070500Z.json",
+        [],
+        []
+    ),
+    # data that was repeated during dev run
+    (
+        [
+            {
+                "facilityName": "Badminton Court 2",
+                "name": "Badminton Court 2 - Saturday  Apr 26 - 5:00 PM",
+                "numPeople": 1,
+                "regStart": 1745100000000,
+                "schedule": [
+                    {
+                        "endDatetime": 174570480000,
+                        "startDatetime": 1745701200000
+                    }
+                ],
+            }
+        ],
+        "raw_centre_raw_20250126T070300Z.json",
+        "raw_centre_raw_20250126T070500Z.json",
+        [4],
         []
     ),
 )
