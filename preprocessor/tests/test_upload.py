@@ -2,10 +2,10 @@
 tests for functions in src/upload_utils.py
 """
 #pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
-from datetime import datetime
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
+import logging
 import pytest
 
 from src.parser import DataValidationError
@@ -25,8 +25,11 @@ from tests.helpers.helper_constants import (
     GET_TIMESLOTS_IDS_DICT_TEST_CONSTANT,
     PROCESS_SINGLE_DATA_TEST_CONSTANT,
     LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT,
-    PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT
+    PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT,
+    PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT
 )
+
+logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
 def test_get_list_of_unprocessed_object_names(conn_fixture, object_names, expected) -> None:
@@ -107,8 +110,8 @@ def test_load_slot_events_batch(conn_fixture, data_list, expected):
     assert result == expected
     assert len(result) == len(data_list)
 
-@pytest.mark.parametrize("data,events_table_ids_dict,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
-def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_datetime, expected):
+@pytest.mark.parametrize("data,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
+def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
     """
     test function that parses data and uploads any new data to facilities/timeslots table
     """
@@ -122,16 +125,13 @@ def test_process_single_data(conn_fixture, data, events_table_ids_dict, scraped_
             data, 
             facilities_ids_dict,
             timeslots_ids_dict,
-            events_table_ids_dict,
             scraped_datetime=scraped_datetime,
             cursor=cursor
         )
 
         # don't compare scraped_datetime
-        if result is not None:
-            assert sorted(result.items()) == sorted(expected.items())
-        else:
-            assert result is None and expected is None
+        assert sorted(result.items()) == sorted(expected.items())
+
     except DataValidationError:
         # if a data validation error is detected check that this was expected
         assert expected == DataValidationError
@@ -148,3 +148,23 @@ def test_process_and_load_batch_data(conn_fixture, data, object_name, expected):
         dry_run=False)
     
     assert result == expected
+
+@pytest.mark.parametrize("data,object_name1,object_name2,expected1,expected2", PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT)
+def test_process_and_load_batch_consecutive(conn_fixture, data, object_name1, object_name2, expected1, expected2):
+    """
+    test function that simiulates processing and loading two objects with identical data
+    """
+    result1 = process_and_load_batch_data(
+        data=data,
+        object_name=object_name1,
+        conn=conn_fixture,
+        dry_run=False)
+
+    result2 = process_and_load_batch_data(
+        data=data,
+        object_name=object_name2,
+        conn=conn_fixture,
+        dry_run=False)
+
+    assert result1 == expected1
+    assert result2 == expected2

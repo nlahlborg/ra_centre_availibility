@@ -456,7 +456,7 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
 
 # data,events_table_ids_dict,scraped_datetime,expected_data_dict
 PROCESS_SINGLE_DATA_TEST_CONSTANT = (
-    # copy of most recent record in db already and scraped_datetime is before start datetime
+    # basecase
     (
          {
             "facilityName": "Badminton Court 1",
@@ -470,77 +470,32 @@ PROCESS_SINGLE_DATA_TEST_CONSTANT = (
                 }
             ],
         },
-        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
-        MEDIUM_DATETIME,
-        None
-    ),
-    # copy of what's in the db already and scraped_datetime is after start datetime (invalid)
-    (
-        {
-            "facilityName": "Badminton Court 1",
-            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
-            "numPeople": 1,
-            "regStart": 1738332000000,
-            "schedule": [
-                {
-                    "endDatetime": 1738962000000,
-                    "startDatetime": 1738958400000
-                }
-            ],
-        },
-        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
-        NEWER_DATETIME,
-        DataValidationError
-    ),
-    # copy of what's in the db already with a newer scraped datetime but a different number of people
-    (
-        {
-            "facilityName": "Badminton Court 1",
-            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
-            "numPeople": 0,
-            "regStart": 1738332000000,
-            "schedule": [
-                {
-                    "endDatetime": 1738962000000,
-                    "startDatetime": 1738958400000
-                }
-            ],
-        },
-        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
-        MEDIUM_DATETIME,
-        {
-            'num_people': 0,
-            'week_number': 6,
-            'facility_id': 1,
-            'timeslot_id': 1,
-            'scraped_datetime': MEDIUM_DATETIME
-        }
-    ),
-    # new facility
-    (
-        {
-            "facilityName": "Badminton Court 0",
-            "name": "Badminton Court 0 - Friday  Feb 07 - 3:00 PM",
-            "numPeople": 1,
-            "regStart": 1738332000000,
-            "schedule": [
-                {
-                    "endDatetime": 1738962000000,
-                    "startDatetime": 1738958400000
-                }
-            ],
-        },
-        GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
         MEDIUM_DATETIME,
         {
             'num_people': 1,
+            'scraped_datetime': MEDIUM_DATETIME,
             'week_number': 6,
-            'facility_id': 2,
-            'timeslot_id': 1,
-            'scraped_datetime': MEDIUM_DATETIME
+            'facility_id': 1,
+            'timeslot_id': 1
         }
     ),
-    # TODO create a mechanism to upload no data if startdatetime is stale
+    # scraped_datetime is after start datetime (invalid)
+    (
+        {
+            "facilityName": "Badminton Court 1",
+            "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+            "numPeople": 1,
+            "regStart": 1738332000000,
+            "schedule": [
+                {
+                    "endDatetime": 1738962000000,
+                    "startDatetime": 1738958400000
+                }
+            ],
+        },
+        NEWER_DATETIME,
+        DataValidationError
+    )
 )
 
 # data, object_name, expected
@@ -573,7 +528,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 ],
             },
         ],
-        "raw_centre_raw_20250126T000200Z.json",
+        "raw_centre_raw_20250126T070300Z.json",
         [4,5]
     ),
     # both data are repeats of the previous row and the startdatetimes are not stale
@@ -604,7 +559,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 ],
             },
         ],
-        "raw_centre_raw_20250126T000200Z.json",
+        "raw_centre_raw_20250126T070300Z.json",
         []
     ),
     # single data is a repeat
@@ -623,7 +578,7 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 ],
             }
         ],
-        "raw_centre_raw_20250126T000200Z.json",
+        "raw_centre_raw_20250126T070300Z.json",
         []
     ),
     # single data is a repeat
@@ -642,7 +597,44 @@ PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT = (
                 ],
             },
         ],
-        "raw_centre_raw_20250126T000200Z.json",
+        "raw_centre_raw_20250126T070300Z.json",
+        []
+    ),
+)
+
+# data,object_name1,object_name2,expected1,expected2
+PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT = (
+    # basecase: both are new data and the startdatetimes are not stale
+    (
+        [
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
+                "numPeople": 2,
+                "regStart": 1738332000000,
+                "schedule": [
+                    {
+                        "endDatetime": 1738962000000,
+                        "startDatetime": 1738958400000
+                    }
+                ],
+            },
+            {
+                "facilityName": "Badminton Court 1",
+                "name": "Badminton Court 1 - Friday  Feb 14 - 3:00 PM",
+                "numPeople": 2,
+                "regStart": 1738929600000,
+                "schedule": [
+                    {
+                        "endDatetime": 1739566800000,
+                        "startDatetime": 1739563200000
+                    }
+                ],
+            },
+        ],
+        "raw_centre_raw_20250126T070300Z.json",
+        "raw_centre_raw_20250126T070500Z.json",
+        [4,5],
         []
     ),
 )

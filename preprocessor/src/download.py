@@ -110,6 +110,21 @@ def get_sql_timeslots_table(conn, schema="source"):
 
     return data
 
+def get_last_scraped_datetime(conn, schema="source"):
+    """
+    fetch the max of scraped_datetime
+    """
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        SELECT
+            MAX(scraped_datetime)
+        FROM "{schema}".reservation_system_events
+    """)
+    data = cursor.fetchone()[0]
+    cursor.close()
+
+    return data
+
 def get_sql_reservation_system_events_table(conn, min_start_datetime=None, schema="source"):
     """
     fetch the most recent event for each facility and timeslot combination

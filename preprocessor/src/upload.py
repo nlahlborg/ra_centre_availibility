@@ -10,12 +10,21 @@ from psycopg import sql
 from src.parser import parse_data, parse_object_name, DataValidationError
 from src.download import (
     get_facilities_ids_dict, get_timeslots_ids_dict,
-    get_reservation_system_events_ids_dict
+    get_reservation_system_events_ids_dict,
+    get_last_scraped_datetime
     )
 
 logger = logging.getLogger(__name__)
 
 # pylint: disable=broad-exception-caught
+
+
+class UploadOrderError(Exception):
+    """
+    raise this exception if attempting to upload data in the wrong order
+    """
+    pass
+
 def get_list_of_unprocessed_object_names(
         object_names,
         conn,
@@ -230,7 +239,6 @@ def process_single_data(
         data,
         facilities_ids_dict,
         timeslots_ids_dict,
-        events_table_ids_dict,
         cursor,
         scraped_datetime
     ):
@@ -269,13 +277,8 @@ def process_single_data(
     # logger.info("creating facts table data packet")
     events_data["facility_id"] = facility_id
     events_data["timeslot_id"] = timeslot_id
-    events_data_key = get_events_data_key(events_data)
-    if events_data_key not in events_table_ids_dict:
-        ret_val = events_data
-    else:
-        ret_val = None
 
-    return ret_val
+    return events_data
 
 def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None, dry_run=False):
     logger.info(f"processing object {object_name}")
@@ -286,9 +289,16 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     facilities_ids_dict = get_facilities_ids_dict(conn)
     timeslots_ids_dict = get_timeslots_ids_dict(conn)
     events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
+    if len(events_table_ids_dict) > 0:
+        last_scraped_datetime = get_last_scraped_datetime(conn)
+    else:
+        last_scraped_datetime = scraped_datetime
+
+    if scraped_datetime < last_scraped_datetime:
+        logger.error(f"scraped_datetime {scraped_datetime} is older than the most recent value in the db: {last_scraped_datetime}")
+        raise UploadOrderError
 
     # parse the raw data and store in memory
-    logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
     cursor = conn.cursor()
     events_data_list = []
     event_ids = []
@@ -298,11 +308,11 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
             scraped_datetime=scraped_datetime,
             facilities_ids_dict=facilities_ids_dict,
             timeslots_ids_dict=timeslots_ids_dict,
-            events_table_ids_dict=events_table_ids_dict,
             cursor=cursor
         )
 
-        if events_data is not None:
+        events_data_key = get_events_data_key(events_data)
+        if events_data_key not in events_table_ids_dict:
             if inserted_datetime is not None:
                 events_data["inserted_datetime"] = inserted_datetime
             events_data_list.append(events_data)
@@ -311,11 +321,6 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     if events_data_list:
         logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
         event_ids += load_slot_events_batch(events_data_list, cursor)
-        #update the events natural key dict
-        for idx in range(len(event_ids)):
-            print(f"idx: {idx}, event_ids: {event_ids[idx]}")
-            print(events_data_list[idx])
-            events_table_ids_dict[get_events_data_key(events_data_list[idx])] = event_ids[idx]    
     else:
         logger.info("There is no new data to add from this batch.")
     logger.info("upating the helper table")
