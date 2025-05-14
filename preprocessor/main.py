@@ -9,9 +9,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 import logging
+
+from psycopg import Error as PostgreSQLError
+
 from src.setup import db_connect, load_env_file, get_s3_bucket, LOCAL_TZ, DB_TZ
 from src.parser import DataValidationError
-from psycopg import Error as PostgreSQLError
 from src.download import get_s3_object_names, get_s3_json_data
 from src.upload import get_list_of_unprocessed_object_names, process_and_load_batch_data
 
@@ -66,17 +68,16 @@ def main(dry_run=True, override_s3_bucket=False):
         otherwise empty list
     
     """
-    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements
+    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements, broad-exception-caught
 
     #setup env and connections
     _ = load_env_file(str(Path(__file__).parent) + "/.env")
     logger.info("connecting to DB.")
     server, conn = db_connect()
 
-    retvar = False
     if conn:
         logger.info("DB connection established.")
-        
+
         inserted_datetime = datetime.now(tz=DB_TZ)
         logger.info("retreiving list of available S3 objects")
         s3_bucket = get_s3_bucket(override_s3_bucket)
@@ -97,12 +98,12 @@ def main(dry_run=True, override_s3_bucket=False):
                 # get the raw data from s3
                 logger.info(f"retreiving single s3 object {object_name}")
                 data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
-                
+
                 event_ids += process_and_load_batch_data(
-                    data=data, 
-                    object_name=object_name, 
-                    inserted_datetime=inserted_datetime, 
-                    conn=conn, 
+                    data=data,
+                    object_name=object_name,
+                    inserted_datetime=inserted_datetime,
+                    conn=conn,
                     dry_run=dry_run)
 
         # if there's an exception flush the event_ids list because we're going to rollback everything
@@ -114,19 +115,18 @@ def main(dry_run=True, override_s3_bucket=False):
             event_ids = []
         except Exception as e:
             logger.exception(f"an unhandled exception occured: {e}")
-            conn.close()
+            conn.close() # pylint: disable=no-member
             if server:
                 server.stop()
             event_ids = []
-        finally:        
-            conn.close()
+        finally:
+            conn.close() # pylint: disable=no-member
             if server:
                 server.stop()
 
-        return event_ids
     else:
         logger.error("No DB Connection")
-    return retvar
+    return event_ids
 
 if __name__ == "__main__":
     # set a local variable to prod and call this main script to do manual initial
