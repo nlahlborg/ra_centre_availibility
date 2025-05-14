@@ -1,27 +1,35 @@
 """
 functions for uploading data into start schema rdb
 """
-
-from datetime import datetime
 import logging
+from datetime import datetime
 
 import psycopg
 from psycopg import sql
 
-from src.setup import RA_CENTRE_TZ as TZ, get_s3_bucket
 from src.parser import parse_data, parse_object_name
-from src.download import (get_s3_object_names, get_s3_json_data,
-    get_facilities_ids_dict, get_timeslots_ids_dict, get_registration_system_events_ids_dict)
+from src.download import (
+    get_facility_ids_dict, get_timeslot_ids_dict,
+    get_reservation_system_events_ids_dict,
+    get_last_scraped_datetime
+    )
 
 logger = logging.getLogger(__name__)
 
 # pylint: disable=broad-exception-caught
+
+
+class UploadOrderError(Exception):
+    """
+    raise this exception if attempting to upload data in the wrong order
+    """
+
 def get_list_of_unprocessed_object_names(
-        object_names,
-        conn,
-        table="helper_loaded_objects",
-        schema="helper"
-        ):
+        object_names:str,
+        conn:psycopg.connection,
+        table:str="helper_loaded_objects",
+        schema:str="helper"
+        ) -> list[str]:
     """
     query the helper table to see which objects have already been uploaded
     and return as a list all the objects which are (1) not in the db and (2) 
@@ -75,7 +83,7 @@ def get_list_of_unprocessed_object_names(
 
     return ret_val
 
-def generate_insert_sql(data, id_col_name, table_name, schema="source"):
+def generate_insert_sql(data:dict, id_col_name:str, table_name:str, schema:str="source") -> tuple[str, tuple]:
     """
     generalize method for generating insert into DDL
     """
@@ -90,7 +98,7 @@ def generate_insert_sql(data, id_col_name, table_name, schema="source"):
 
     return stmt, values
 
-def generate_insert_sql_batch(data_list, table_name, schema="source"):
+def generate_insert_sql_batch(data_list:list[dict], table_name:str, schema:str="source") -> tuple[str, list[tuple]]:
     """
     generalize method for generating insert into DDL
     """
@@ -108,9 +116,9 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
 
     return stmt, values
 
-def load_slot_events_batch(data_list, cursor, schema="source"):
+def load_slot_events_batch(data_list:list[dict], cursor:psycopg.cursor, schema:str="source") -> list[int]:
     """
-    Loads registration events data into the registration_slot_events table, 
+    Loads reservation events data into the reservation_slot_events table, 
 
     Args:
         data: A list of dictionaries containing timeslot attribuites
@@ -128,12 +136,23 @@ def load_slot_events_batch(data_list, cursor, schema="source"):
             schema=schema)
         cursor.executemany(stmt, values)
 
-        return True
+        #query the ids of the uploaded data
+        query = f"""
+            SELECT event_id
+            FROM "{schema}".reservation_system_events
+            ORDER BY event_id DESC
+            LIMIT {len(data_list)}
+            """
+        cursor.execute(query)
+        result = cursor.fetchall()
+        event_ids = [x[0] for x in result[::-1]]
+
+        return event_ids
     except psycopg.Error as e:
         logger.exception(e)
         return False
 
-def load_helper_data(object_name, cursor, schema="helper"):
+def load_helper_data(object_name:str, inserted_datetime:datetime, cursor:psycopg.cursor, schema:str="helper") -> str:
     """
     Loads object names data into the helper table
 
@@ -145,13 +164,15 @@ def load_helper_data(object_name, cursor, schema="helper"):
     Returns:
         object name
     """
+    if inserted_datetime is None:
+        inserted_datetime = datetime.now()
 
     #insert object name record into helper table
     helper_data = {
         "object_name": object_name,
         "object_type": "raw_data",
         "scraped_datetime": parse_object_name(object_name),
-        "inserted_datetime":  datetime.now(tz=TZ)
+        "inserted_datetime":  inserted_datetime
     }
     stmt, values = generate_insert_sql(
         helper_data,
@@ -162,7 +183,7 @@ def load_helper_data(object_name, cursor, schema="helper"):
 
     return object_name
 
-def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
+def load_single_data(data:dict, table_name:str, id_col_name:str, cursor:psycopg.cursor, schema:str="source") -> int:
     """
     wrapper for generate_insert_sql and cursor.fetchone to insert 
     data and get the id of the inserted row
@@ -184,13 +205,12 @@ def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
 
     return table_id
 
-def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema):
+def load_new_single_data(data:dict, ids_dict:dict, table_name:str, id_col_name:str, cursor:psycopg.cursor, schema:str) -> int:
     """
-    wrapper for load_facility. Determines if the data is already in the db 
+    wrapper for load_single_data. Determines if the data is already in the db 
     and if not then uploads
     """
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    #get the facilities id
     #logger.info(f"getting {id_col_name} if it exists")
     idn = ids_dict.get(tuple(data.values()))
     if idn is None:
@@ -201,119 +221,131 @@ def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema
 
     return idn
 
-def load_data(conn, server, dry_run=False, override_s3_bucket=False):
+def get_events_data_key(data):
     """
-    logic for loading all data. Data from each S3 object is loaded as a 
-    single transaction
+    create a tuple of the natural key for the reservation system events table
     """
-    # pylint: disable=too-many-locals, too-many-branches, line-too-long, too-many-statements
-    inserted_datetime = datetime.now(tz=TZ)
-    logger.info("retreiving list of available S3 objects")
-    s3_bucket = get_s3_bucket(override_s3_bucket)
-    objects_list = get_s3_object_names(bucket=s3_bucket)
-    new_objects_list = get_list_of_unprocessed_object_names(objects_list, conn)
+    retval = (
+        data.get("num_people"),
+        data.get("week_number"),
+        data.get("facility_id"),
+        data.get("timeslot_id"),
+    )
 
-    if new_objects_list:
-        logger.info(
-            f"preparing to process {len(new_objects_list)} "
-            f"new objects out of {len(objects_list)}."
-            )
+    return retval
+
+def process_single_data(
+        data,
+        facility_ids_dict,
+        timeslots_ids_dict,
+        cursor,
+        scraped_datetime
+    ):
+    """
+    process each data item from the s3 batch. If any new dimensions data are found
+    they will be added to the db transaction as part of this function.
+
+    returns a data item if the processed data is different from the most recent
+    data row. Else it returns none.
+    """
+    # first parse the data
+    #logger.info("parsing single line of data")
+    facilities_data, timeslots_data, events_data = parse_data(data, scraped_datetime)
+
+    # load the facility data if it is unique
+    facility_id = load_new_single_data(
+        data=facilities_data,
+        ids_dict=facility_ids_dict,
+        table_name="facilities",
+        id_col_name="facility_id",
+        schema="source",
+        cursor=cursor
+    )
+
+    # load the timeslot data if it is unique
+    timeslot_id = load_new_single_data(
+        data=timeslots_data,
+        ids_dict=timeslots_ids_dict,
+        table_name="timeslots",
+        id_col_name="timeslot_id",
+        schema="source",
+        cursor=cursor
+    )
+
+    #include the ids in the events data row
+    # logger.info("creating facts table data packet")
+    events_data["facility_id"] = facility_id
+    events_data["timeslot_id"] = timeslot_id
+
+    return events_data
+
+def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None, dry_run=False):
+    """
+    the main parse and upload function. loop through each item in a batch and upload new data
+    """
+
+    logger.info(f"processing object {object_name}")
+    scraped_datetime = parse_object_name(object_name=object_name)
+
+    # load the existing tables from the db to compare in memory
+    logger.info("loading facilities db data to memory")
+    facility_ids_dict = get_facility_ids_dict(conn)
+    #logger.info(f"facility ids: {facility_ids_dict}")
+    logger.info("loading timeslots db data to memory")
+    timeslots_ids_dict = get_timeslot_ids_dict(conn)
+    #logger.info(f"timeslot ids: {timeslots_ids_dict}")
+    logger.info("loading subset of events db data to memory")
+    events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
+    #logger.info(f"events ids: {events_table_ids_dict}")
+    if len(events_table_ids_dict) > 0:
+        last_scraped_datetime = get_last_scraped_datetime(conn)
     else:
-        logger.info("No new objects found. Will shut down.")
-    try:
-        for object_name in new_objects_list:
-            # get the raw data from s3
-            logger.info(f"processing object {object_name}")
-            scraped_datetime = parse_object_name(object_name=object_name)
-            logger.info("retreiving single s3 object")
-            data = get_s3_json_data(bucket=s3_bucket, object_name=object_name)
+        last_scraped_datetime = scraped_datetime
 
-            # load the existing tables from the db to compare in memory
-            logger.info("loading db subsets")
-            facilities_ids_dict = get_facilities_ids_dict(conn)
-            timeslots_ids_dict = get_timeslots_ids_dict(conn)
-            events_table_ids_dict = get_registration_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
+    if scraped_datetime < last_scraped_datetime:
+        logger.error(f"scraped_datetime {scraped_datetime} is older than the most recent value in the db: {last_scraped_datetime}")
+        raise UploadOrderError
 
-            # parse the raw data and store in memory
-            logger.info(f"parsing and uploading {len(data)} data records for {object_name}")
-            cursor = conn.cursor()
-            events_data_list = []
-            try:
-                for item in data:
-                    # first parse the data
-                    #logger.info("parsing single line of data")
-                    facilities_data, timeslots_data, events_data = parse_data(item, scraped_datetime)
+    # parse the raw data and store in memory
+    cursor = conn.cursor()
+    events_data_list = []
+    event_ids = []
+    logger.info("start processing data in memory")
+    for item in data:
+        events_data = process_single_data(
+            data=item,
+            scraped_datetime=scraped_datetime,
+            facility_ids_dict=facility_ids_dict,
+            timeslots_ids_dict=timeslots_ids_dict,
+            cursor=cursor
+        )
 
-                    facility_id = load_new_single_data(
-                        data=facilities_data,
-                        ids_dict=facilities_ids_dict,
-                        table_name="facilities",
-                        id_col_name="facility_id",
-                        schema="source",
-                        cursor=cursor
-                    )
+        events_data_key = get_events_data_key(events_data)
+        if events_data_key not in events_table_ids_dict:
+            if inserted_datetime is not None:
+                events_data["inserted_datetime"] = inserted_datetime
+            events_data_list.append(events_data)
 
-                    timeslot_id = load_new_single_data(
-                        data=timeslots_data,
-                        ids_dict=timeslots_ids_dict,
-                        table_name="timeslots",
-                        id_col_name="timeslot_id",
-                        schema="source",
-                        cursor=cursor
-                    )
+    #batch upload of the facts table data
+    logger.info("starting data upload")
+    if events_data_list:
+        logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
+        event_ids += load_slot_events_batch(events_data_list, cursor)
+        #logger.info(f"events data \n{events_data_list}")
+    else:
+        logger.info("There is no new data to add from this batch.")
+    logger.info("upating the helper table")
+    _ = load_helper_data(object_name, inserted_datetime, cursor)
 
-                    #include the ids in the events data row
-                    # logger.info("creating facts table data packet")
-                    events_data["facility_id"] = facility_id
-                    events_data["timeslot_id"] = timeslot_id
-                    events_data["inserted_datetime"] = inserted_datetime
-                    events_data_key = (
-                        events_data.get("num_people"),
-                        events_data.get("week_number"),
-                        events_data.get("facility_id"),
-                        events_data.get("timeslot_id"),
-                    )
-                    if events_data_key not in events_table_ids_dict:
-                        events_data_list.append(events_data)
+    #commit transactions from entire object together otherwise rollback
+    if dry_run:
+        cursor.close()
+        conn.rollback()
+        logger.info(f"DRY RUN: did not commit data for {object_name}")
+    else:
+        logger.info("committing batch")
+        cursor.close()
+        conn.commit()
+        logger.info(f"uploaded data for {object_name}")
 
-                #batch upload of the facts table data
-                if events_data_list:
-                    logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
-                    load_slot_events_batch(events_data_list, cursor)
-                else:
-                    logger.info("There is no new data to add from this batch.")
-                logger.info("upating the helper table")
-                _ = load_helper_data(object_name, cursor)
-
-                #commit transactions from entire object together otherwise rollback
-                if dry_run:
-                    conn.rollback()
-                    logger.info(f"DRY RUN: did not commit data for {object_name}")
-                else:
-                    logger.info("committing batch")
-                    conn.commit()
-                    logger.info(f"uploaded data for {object_name}")
-
-            except psycopg.Error as e:
-                conn.rollback()
-                logger.error(f"Error loading data: {e}")
-            except KeyError as e:
-                conn.rollback()
-                logger.error(f"input data does not have the right format: {e}")
-            except Exception:
-                conn.rollback()
-                logger.exception("An unhandled exception occured during the write transaction")
-            finally:
-                cursor.close()
-
-        conn.close()
-        if server:
-            server.stop()
-
-        return True
-    except Exception:
-        logger.exception("an unhandled exception occured ouside of the write transactions")
-        conn.close()
-        if server:
-            server.stop()
-        return False
+    return event_ids

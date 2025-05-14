@@ -7,10 +7,17 @@ import sys
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import pytest
 
-from src.parser import get_facility_type, parse_object_name, parse_data
+from src.setup import API_TZ as TZ
+from src.parser import (
+    get_facility_type, parse_object_name, parse_data,
+    parse_displayname, flag_inconsistant_datetime,
+    flag_stale_start_datetime, DataValidationError
+)
 from tests.helpers.helper_constants import (
     GET_FACILITY_TYPE_TEST_CONSTANT, PARSE_OBJECT_NAME_TEST_CONSTANT,
-    PARSE_DATA_TEST_CONSTANT
+    PARSE_DATA_TEST_CONSTANT, PARSE_DISPLAY_NAME_TEST_CONSTANT,
+    FLAG_INCONSISTANT_DATETIME_TEST_CONSTANT,
+    FLAG_STALE_START_DATETIME_TEST_CONSTANT
 )
 
 @pytest.mark.parametrize("facility_name,expected", GET_FACILITY_TYPE_TEST_CONSTANT)
@@ -46,9 +53,39 @@ def test_parse_data(
     """
     facility_data, timeslot_data, event_data = parse_data(data, scraped_datetime)
 
-    #have to pop the inserted_datetime from data since that results from datetime.now
-    _ = event_data.pop("inserted_datetime")
-
     assert facility_data == expected_facility_data
     assert timeslot_data == expected_timeslot_data
     assert event_data == expected_event_data
+
+@pytest.mark.parametrize("display_name,year,expected", PARSE_DISPLAY_NAME_TEST_CONSTANT)
+def test_parse_displayname(display_name, year, expected):
+    """
+    test the parser for the website displayname, used in data validation
+    """
+    result = parse_displayname(display_name, year)
+
+    assert result.astimezone(TZ) == expected.astimezone(TZ)
+
+@pytest.mark.parametrize("start_datetime,display_name,expected", FLAG_INCONSISTANT_DATETIME_TEST_CONSTANT)
+def test_flag_inconsistant_datetime(start_datetime, display_name, expected):
+    """
+    tests validation for inconsistent datetime between different fields returned in api call
+    """
+    try:
+        flag_inconsistant_datetime(start_datetime, display_name)
+
+        assert expected
+    except DataValidationError:
+        assert expected == DataValidationError
+
+@pytest.mark.parametrize("start_datetime,scraped_datetime,expected", FLAG_STALE_START_DATETIME_TEST_CONSTANT)
+def test_flag_stale_start_datetime(start_datetime, scraped_datetime, expected):
+    """
+    tests validation for stale data in an api call
+    """
+    try:
+        flag_stale_start_datetime(start_datetime, scraped_datetime)
+
+        assert expected
+    except DataValidationError:
+        assert expected == DataValidationError

@@ -5,20 +5,32 @@ tests for functions in src/upload_utils.py
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
+import logging
+
 import pytest
 
+from src.parser import DataValidationError
 from src.upload import (
     get_list_of_unprocessed_object_names,
     generate_insert_sql, generate_insert_sql_batch,
-    load_new_single_data, load_slot_events_batch
+    load_new_single_data, load_slot_events_batch,
+    process_single_data,
+    process_and_load_batch_data
 )
 from tests.helpers.helper_constants import (
     GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT,
     GENERATE_INSERT_SQL_TEST_CONSTANT,
     GENERATE_INSERT_SQL_BATCH_TEST_CONSTANT,
     LOAD_NEW_SINGLE_DATA_TEST_CONSTANT,
-    SAMPLE_EVENTS_DATA
+    GET_facility_ids_dict_TEST_CONSTANT,
+    get_timeslot_ids_dict_TEST_CONSTANT,
+    PROCESS_SINGLE_DATA_TEST_CONSTANT,
+    LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT,
+    PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT,
+    PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT
 )
+
+logging.basicConfig(level=logging.DEBUG)
 
 @pytest.mark.parametrize("object_names,expected", GET_LIST_OF_UNPROCESSED_OBJECT_NAMES_TEST_CONSTANT)
 def test_get_list_of_unprocessed_object_names(conn_fixture, object_names, expected) -> None:
@@ -87,37 +99,87 @@ def test_load_new_single_data(conn_fixture, data, ids_dict, table_name, id_col_n
 
     assert result == expected
 
-def test_load_slot_events_batch(conn_fixture):
+#(data in, facility_id, timeslot_id, id out
+@pytest.mark.parametrize("data_list,expected", LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT)
+def test_load_slot_events_batch(conn_fixture, data_list, expected):
     """
     Test timeslot data load
     """
-    data1 = SAMPLE_EVENTS_DATA.copy()
-    data2 = SAMPLE_EVENTS_DATA.copy()
-    data2["num_people"] = 0
-    data_list = [data1, data2]
     cursor = conn_fixture.cursor()
     result = load_slot_events_batch(data_list, cursor)
 
-    assert result
+    assert result == expected
+    assert len(result) == len(data_list)
 
-# def test_load_slot_events_batch_stale_scraped_datetime(conn_fixture):
-#     """
-#     Test timeslot data load
-#     """
+@pytest.mark.parametrize("data,scraped_datetime,expected", PROCESS_SINGLE_DATA_TEST_CONSTANT)
+def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
+    """
+    test function that parses data and uploads any new data to facilities/timeslots table
+    """
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    facility_ids_dict = GET_facility_ids_dict_TEST_CONSTANT
+    timeslots_ids_dict = get_timeslot_ids_dict_TEST_CONSTANT
+
+    cursor = conn_fixture.cursor()
+    try:
+        result = process_single_data(
+            data,
+            facility_ids_dict,
+            timeslots_ids_dict,
+            scraped_datetime=scraped_datetime,
+            cursor=cursor
+        )
+
+        # don't compare scraped_datetime
+        assert sorted(result.items()) == sorted(expected.items())
+
+    except DataValidationError:
+        # if a data validation error is detected check that this was expected
+        assert expected == DataValidationError
+
+@pytest.mark.parametrize("data,object_name,expected", PROCESS_AND_LOAD_BATCH_DATA_TEST_CONSTANT)
+def test_process_and_load_batch_data(conn_fixture, data, object_name, expected):
+    """
+    test function that parses data and uploads any new data to facilities/timeslots table
+    """
+    result = process_and_load_batch_data(
+        data=data,
+        object_name=object_name,
+        conn=conn_fixture,
+        dry_run=False)
+
+    assert result == expected
+
+@pytest.mark.parametrize("data,object_name1,object_name2,expected1,expected2", PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT)
+def test_process_and_load_batch_consecutive(conn_fixture, data, object_name1, object_name2, expected1, expected2):
+    """
+    test function that simiulates processing and loading two objects with identical data
+    """
+    result1 = process_and_load_batch_data(
+        data=data,
+        object_name=object_name1,
+        conn=conn_fixture,
+        dry_run=False)
+
+    result2 = process_and_load_batch_data(
+        data=data,
+        object_name=object_name2,
+        conn=conn_fixture,
+        dry_run=False)
+
+    assert result1 == expected1
+    assert result2 == expected2
+
+# def test_batch_upload_to_empty_db(conn_fixture, data, object_name, expected):
+#     object_name = raw_json_path.name
+
 #     cursor = conn_fixture.cursor()
+#     clear_starter_data(cursor)
+#     cursor.close()
+#     result = process_and_load_batch_data(
+#         data=json_data,
+#         object_name=object_name,
+#         conn = conn_fixture
+#         )
 
-#     data = {
-#         'num_people': 1,
-#         'scraped_datetime': datetime.datetime(2024, 4, 22, 1, 1, tzinfo=RA_CENTRE_TZ),
-#         'week_number': 6,
-#         'facility_id': 1,
-#         'timeslot_id': 1
-#         }
-
-#     try:
-#         _ = load_slot_events_batch(data, cursor)
-#         value_error_raised = False
-#     except ValueError:
-#         value_error_raised = True
-
-#     assert value_error_raised
+#     assert len(json_data) == len(result)
