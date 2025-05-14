@@ -6,7 +6,7 @@ CREATE OR REPLACE VIEW "source".__reservation_system_events__start_datetime AS (
 	    ('Jan 1 ' || EXTRACT(YEAR FROM scraped_datetime)::text || ' ' || start_time::text)::timestamptz
 	        - (EXTRACT(DOW FROM (('Jan 1 ') || EXTRACT(YEAR FROM scraped_datetime)::text)::date)::text || ' days')::interval
 	        + (((week_number-1)*7)::text || ' days')::interval
-	        - (CASE
+	        + (CASE
 	            WHEN day_of_week = 'Sunday' THEN 0
 	            WHEN day_of_week = 'Monday' THEN 1
 	            WHEN day_of_week = 'Tuesday' THEN 2

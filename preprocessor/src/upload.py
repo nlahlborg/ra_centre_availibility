@@ -3,6 +3,7 @@ functions for uploading data into start schema rdb
 """
 import logging
 from datetime import datetime
+from typing import List, Tuple
 
 import psycopg
 from psycopg import sql
@@ -26,11 +27,11 @@ class UploadOrderError(Exception):
     pass
 
 def get_list_of_unprocessed_object_names(
-        object_names,
-        conn,
-        table="helper_loaded_objects",
-        schema="helper"
-        ):
+        object_names:str,
+        conn:psycopg.connection,
+        table:str="helper_loaded_objects",
+        schema:str="helper"
+        ) -> list[str]:
     """
     query the helper table to see which objects have already been uploaded
     and return as a list all the objects which are (1) not in the db and (2) 
@@ -84,7 +85,7 @@ def get_list_of_unprocessed_object_names(
 
     return ret_val
 
-def generate_insert_sql(data, id_col_name, table_name, schema="source"):
+def generate_insert_sql(data:dict, id_col_name:str, table_name:str, schema:str="source") -> tuple[str, tuple]:
     """
     generalize method for generating insert into DDL
     """
@@ -99,7 +100,7 @@ def generate_insert_sql(data, id_col_name, table_name, schema="source"):
 
     return stmt, values
 
-def generate_insert_sql_batch(data_list, table_name, schema="source"):
+def generate_insert_sql_batch(data_list:list[dict], table_name:str, schema:str="source") -> tuple[str, list[tuple]]:
     """
     generalize method for generating insert into DDL
     """
@@ -117,7 +118,7 @@ def generate_insert_sql_batch(data_list, table_name, schema="source"):
 
     return stmt, values
 
-def load_slot_events_batch(data_list, cursor, schema="source"):
+def load_slot_events_batch(data_list:list[dict], cursor:psycopg.cursor, schema:str="source") -> list[int]:
     """
     Loads reservation events data into the reservation_slot_events table, 
 
@@ -153,7 +154,7 @@ def load_slot_events_batch(data_list, cursor, schema="source"):
         logger.exception(e)
         return False
 
-def load_helper_data(object_name, inserted_datetime, cursor, schema="helper"):
+def load_helper_data(object_name:str, inserted_datetime:datetime, cursor:psycopg.cursor, schema:str="helper") -> str:
     """
     Loads object names data into the helper table
 
@@ -184,7 +185,7 @@ def load_helper_data(object_name, inserted_datetime, cursor, schema="helper"):
 
     return object_name
 
-def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
+def load_single_data(data:dict, table_name:str, id_col_name:str, cursor:psycopg.cursor, schema:str="source") -> int:
     """
     wrapper for generate_insert_sql and cursor.fetchone to insert 
     data and get the id of the inserted row
@@ -206,7 +207,7 @@ def load_single_data(data, table_name, id_col_name, cursor, schema="source"):
 
     return table_id
 
-def load_new_single_data(data, ids_dict, table_name, id_col_name, cursor, schema):
+def load_new_single_data(data:dict, ids_dict:dict, table_name:str, id_col_name:str, cursor:psycopg.cursor, schema:str) -> int:
     """
     wrapper for load_single_data. Determines if the data is already in the db 
     and if not then uploads

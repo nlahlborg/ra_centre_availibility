@@ -2,7 +2,6 @@
 tests for functions in src/upload_utils.py
 """
 #pylint: disable=import-error, wrong-import-position, line-too-long, redefined-outer-name
-from datetime import datetime
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
@@ -15,11 +14,29 @@ from src.download import (
     get_timeslot_ids_dict, get_reservation_system_events_ids_dict
 )
 from tests.helpers.helper_constants import (
-    SAMPLE_FACILITIES_DATA, SAMPLE_TIMESLOTS_DATA, SAMPLE_EVENTS_DATA,
+    SAMPLE_FACILITIES_DATA, SAMPLE_TIMESLOTS_DATA,
     GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT,
     GET_facility_ids_dict_TEST_CONSTANT, get_timeslot_ids_dict_TEST_CONSTANT,
     GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT,
 )
+
+def test_table_gets_cleared(conn_fixture):
+    """
+    make sure that the clear function works. keep this function at the beginning of
+    the test_download.py script to verify that subsequent tests stil begin with the table in its initial 
+    (not cleared) state. 
+    """
+    cursor = conn_fixture.cursor()
+    clear_starter_data(cursor)
+    cursor.close()
+
+    # assert that all the download table functions return empty data structures
+    assert get_sql_facilities_table(conn_fixture) == []
+    assert get_sql_timeslots_table(conn_fixture) == []
+    assert get_sql_reservation_system_events_table(conn_fixture) == []
+    assert get_facility_ids_dict(conn_fixture) == {}
+    assert get_timeslot_ids_dict(conn_fixture) == {}
+    assert get_reservation_system_events_ids_dict(conn_fixture) == {}
 
 def test_get_sql_facilities_table(conn_fixture) -> None:
     """
@@ -74,13 +91,3 @@ def test_get_reservation_system_events_ids_dict(conn_fixture):
     expected = GET_RESERVATION_SYSTEM_EVENTS_IDS_DICT_TEST_CONSTANT
 
     assert result == expected
-
-def test_table_gets_cleared(conn_fixture):
-    cursor = conn_fixture.cursor()
-    clear_starter_data(cursor)
-    cursor.close()
-    conn_fixture.commit()
-
-    assert get_facility_ids_dict(conn_fixture) == {}
-    assert get_timeslot_ids_dict(conn_fixture) == {}
-    assert get_reservation_system_events_ids_dict(conn_fixture) == {}
