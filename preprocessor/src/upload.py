@@ -286,11 +286,13 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     scraped_datetime = parse_object_name(object_name=object_name)
 
     # load the existing tables from the db to compare in memory
-    logger.info("loading db subsets")
+    logger.info("loading facilities db data to memory")
     facility_ids_dict = get_facility_ids_dict(conn)
     #logger.info(f"facility ids: {facility_ids_dict}")
+    logger.info("loading timeslots db data to memory")
     timeslots_ids_dict = get_timeslot_ids_dict(conn)
     #logger.info(f"timeslot ids: {timeslots_ids_dict}")
+    logger.info("loading subset of events db data to memory")
     events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
     #logger.info(f"events ids: {events_table_ids_dict}")
     if len(events_table_ids_dict) > 0:
@@ -306,6 +308,7 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     cursor = conn.cursor()
     events_data_list = []
     event_ids = []
+    logger.info("start processing data in memory")
     for item in data:
         events_data = process_single_data(
             data=item,
@@ -322,6 +325,7 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
             events_data_list.append(events_data)
 
     #batch upload of the facts table data
+    logger.info("starting data upload")
     if events_data_list:
         logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
         event_ids += load_slot_events_batch(events_data_list, cursor)
