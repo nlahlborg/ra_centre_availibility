@@ -39,6 +39,23 @@ VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT = (
         'Sunday',
         WEB_DISPLAY_TZ.localize(datetime(2025, 3, 9, 2, 0, 0)).astimezone(DB_TZ)
     ),
+    # edge case: scraped_datetime is in 2024 and reservation is in 2025
+    (
+        DB_TZ.localize(datetime(2024, 12, 25, 1, 59, 0)),
+        WEB_DISPLAY_TZ.localize(datetime(2025, 1, 4, 2, 0, 0)).astimezone(DB_TZ).timetz(),
+        1,
+        'Saturday',
+        WEB_DISPLAY_TZ.localize(datetime(2025, 1, 4, 2, 0, 0)).astimezone(DB_TZ)
+    ),
+    # corner case: scraped_datetime is in 2025 in UTC but 2024 in EST
+    (
+        DB_TZ.localize(datetime(2025, 1, 1, 0, 1, 0)),
+        WEB_DISPLAY_TZ.localize(datetime(2025, 1, 4, 2, 0, 0)).astimezone(DB_TZ).timetz(),
+        1,
+        'Saturday',
+        WEB_DISPLAY_TZ.localize(datetime(2025, 1, 4, 2, 0, 0)).astimezone(DB_TZ)
+    ),
+
 
 
 )
