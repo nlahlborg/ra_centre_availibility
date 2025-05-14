@@ -5,14 +5,15 @@ tests for functions in src/upload_utils.py
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
+
 import pytest
 
-from tests.common import clear_starter_data
 from src.download import (
     get_sql_facilities_table, get_sql_reservation_system_events_table,
     get_sql_timeslots_table, get_facility_ids_dict,
     get_timeslot_ids_dict, get_reservation_system_events_ids_dict
 )
+from tests.common import clear_starter_data
 from tests.helpers.helper_constants import (
     SAMPLE_FACILITIES_DATA, SAMPLE_TIMESLOTS_DATA,
     GET_SQL_RESERVATION_SYSTEM_EVENTS_TABLE_TEST_CONSTANT,

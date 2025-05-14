@@ -200,12 +200,12 @@ PARSE_DISPLAY_NAME_TEST_CONSTANT = (
         "Badminton Court 1 - Friday  Feb 07 - 3:00 PM",
         2025,
         WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
-    ),    
+    ),
     (
         "Badminton Court 1 - Friday Feb 07 - 3:00 PM",
         2025,
         WEB_DISPLAY_TZ.localize(datetime.datetime(2025, 2, 7, 15, 0))
-    ),    
+    ),
     (
         "Pickleball Centre - Friday Feb 07 - 3:00 PM",
         2025,
@@ -428,7 +428,7 @@ LOAD_SLOT_EVENTS_BATCH_TEST_CONSTANT = (
                 'week_number': 6,
                 'facility_id': 1,
                 'timeslot_id': 1
-            }, 
+            },
             {
                 'num_people': 0,
                 'scraped_datetime': DB_TZ.localize(datetime.datetime(2026, 1, 26, 7, 10)),

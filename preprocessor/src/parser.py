@@ -19,7 +19,6 @@ class DataValidationError(Exception):
     """
     raise this exception if invalid data is detected while parsing
     """
-    pass
 
 def get_tz_aware_datetime(timestamp: int, tz=API_TZ) -> datetime:
     """
@@ -71,11 +70,11 @@ def parse_displayname(display_name:str, year: int, display_tz=WEB_DISPLAY_TZ) ->
     parts = display_name.split('-')
     date_part = parts[1].strip().split(' ', maxsplit=1)[-1].strip()
     time_part = parts[2].strip()
-        
+
     # Parse the datetime string
     datetime_str = f"{date_part} {year} {time_part}"
     retvar = display_tz.localize(datetime.strptime(datetime_str, "%b %d %Y %I:%M %p"))
-    
+
     return retvar
 
 def flag_inconsistant_datetime(start_datetime: datetime, display_name: str) -> None:

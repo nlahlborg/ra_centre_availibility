@@ -3,12 +3,11 @@ functions for uploading data into start schema rdb
 """
 import logging
 from datetime import datetime
-from typing import List, Tuple
 
 import psycopg
 from psycopg import sql
 
-from src.parser import parse_data, parse_object_name, DataValidationError
+from src.parser import parse_data, parse_object_name
 from src.download import (
     get_facility_ids_dict, get_timeslot_ids_dict,
     get_reservation_system_events_ids_dict,
@@ -24,7 +23,6 @@ class UploadOrderError(Exception):
     """
     raise this exception if attempting to upload data in the wrong order
     """
-    pass
 
 def get_list_of_unprocessed_object_names(
         object_names:str,
@@ -148,7 +146,7 @@ def load_slot_events_batch(data_list:list[dict], cursor:psycopg.cursor, schema:s
         cursor.execute(query)
         result = cursor.fetchall()
         event_ids = [x[0] for x in result[::-1]]
-        
+
         return event_ids
     except psycopg.Error as e:
         logger.exception(e)
@@ -282,6 +280,10 @@ def process_single_data(
     return events_data
 
 def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None, dry_run=False):
+    """
+    the main parse and upload function. loop through each item in a batch and upload new data
+    """
+
     logger.info(f"processing object {object_name}")
     scraped_datetime = parse_object_name(object_name=object_name)
 

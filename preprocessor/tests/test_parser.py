@@ -59,13 +59,18 @@ def test_parse_data(
 
 @pytest.mark.parametrize("display_name,year,expected", PARSE_DISPLAY_NAME_TEST_CONSTANT)
 def test_parse_displayname(display_name, year, expected):
+    """
+    test the parser for the website displayname, used in data validation
+    """
     result = parse_displayname(display_name, year)
 
     assert result.astimezone(TZ) == expected.astimezone(TZ)
 
 @pytest.mark.parametrize("start_datetime,display_name,expected", FLAG_INCONSISTANT_DATETIME_TEST_CONSTANT)
 def test_flag_inconsistant_datetime(start_datetime, display_name, expected):
-
+    """
+    tests validation for inconsistent datetime between different fields returned in api call
+    """
     try:
         flag_inconsistant_datetime(start_datetime, display_name)
 
@@ -75,7 +80,9 @@ def test_flag_inconsistant_datetime(start_datetime, display_name, expected):
 
 @pytest.mark.parametrize("start_datetime,scraped_datetime,expected", FLAG_STALE_START_DATETIME_TEST_CONSTANT)
 def test_flag_stale_start_datetime(start_datetime, scraped_datetime, expected):
-
+    """
+    tests validation for stale data in an api call
+    """
     try:
         flag_stale_start_datetime(start_datetime, scraped_datetime)
 

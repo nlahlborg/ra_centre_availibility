@@ -1,7 +1,8 @@
 """
 test the logic in SQL views
 """
-from datetime import datetime, timedelta
+#pylint: disable=import-error, wrong-import-position
+from datetime import datetime
 import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
@@ -10,8 +11,6 @@ import pytest
 from tests.common import clear_starter_data
 from src.setup import DB_TZ, WEB_DISPLAY_TZ
 from src.upload import load_single_data
-
-#from tests.helpers import VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT
 
 # scraped_datetime,start_time,week_number,day_of_week,expected
 VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT = (
@@ -55,13 +54,19 @@ VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT = (
         'Saturday',
         WEB_DISPLAY_TZ.localize(datetime(2025, 1, 4, 2, 0, 0)).astimezone(DB_TZ)
     ),
-
-
-
 )
 
-@pytest.mark.parametrize("scraped_datetime,start_time,week_number,day_of_week,expected", VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT)
-def test__reservation_system_events__start_datetime(conn_fixture, scraped_datetime, start_time, week_number, day_of_week, expected):
+@pytest.mark.parametrize(
+        "scraped_datetime,start_time,week_number,day_of_week,expected",
+        VIEW__RESERVATION_SYSTEM_EVENTS__START_DATETIME_TEST_CONSTANT
+        )
+def test__reservation_system_events__start_datetime(
+    conn_fixture,
+    scraped_datetime,
+    start_time,
+    week_number,
+    day_of_week,
+    expected):
     """
     clears the table and then tests that the start_datetime parser is giving the expected results
     """
@@ -119,5 +124,3 @@ def test__reservation_system_events__start_datetime(conn_fixture, scraped_dateti
     result = cursor.fetchone()[0]
 
     assert result == expected
-
-

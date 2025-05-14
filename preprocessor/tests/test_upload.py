@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 sys.path.insert(1, str(Path(__file__).parent.parent))
 import logging
+
 import pytest
 
-from tests.common import clear_starter_data
 from src.parser import DataValidationError
 from src.upload import (
     get_list_of_unprocessed_object_names,
@@ -123,7 +123,7 @@ def test_process_single_data(conn_fixture, data, scraped_datetime, expected):
     cursor = conn_fixture.cursor()
     try:
         result = process_single_data(
-            data, 
+            data,
             facility_ids_dict,
             timeslots_ids_dict,
             scraped_datetime=scraped_datetime,
@@ -147,7 +147,7 @@ def test_process_and_load_batch_data(conn_fixture, data, object_name, expected):
         object_name=object_name,
         conn=conn_fixture,
         dry_run=False)
-    
+
     assert result == expected
 
 @pytest.mark.parametrize("data,object_name1,object_name2,expected1,expected2", PROCESS_AND_LOAD_BATCH_DATA_CONSECUTIVE_TEST_CONSTANT)
