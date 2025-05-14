@@ -132,4 +132,4 @@ if __name__ == "__main__":
     # set a local variable to prod and call this main script to do manual initial
     # DB population or manual backfils
     #ra-center-raw-data-prod
-    _ = main(dry_run=False)
+    _ = main(dry_run=True)

@@ -288,11 +288,11 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     # load the existing tables from the db to compare in memory
     logger.info("loading db subsets")
     facility_ids_dict = get_facility_ids_dict(conn)
-    logger.info(f"facility ids: {facility_ids_dict}")
+    #logger.info(f"facility ids: {facility_ids_dict}")
     timeslots_ids_dict = get_timeslot_ids_dict(conn)
-    logger.info(f"timeslot ids: {timeslots_ids_dict}")
+    #logger.info(f"timeslot ids: {timeslots_ids_dict}")
     events_table_ids_dict = get_reservation_system_events_ids_dict(conn, min_start_datetime=scraped_datetime)
-    logger.info(f"events ids: {events_table_ids_dict}")
+    #logger.info(f"events ids: {events_table_ids_dict}")
     if len(events_table_ids_dict) > 0:
         last_scraped_datetime = get_last_scraped_datetime(conn)
     else:
@@ -325,7 +325,7 @@ def process_and_load_batch_data(data, object_name, conn, inserted_datetime=None,
     if events_data_list:
         logger.info(f"batch uploading {len(events_data_list)} new records to the facts table")
         event_ids += load_slot_events_batch(events_data_list, cursor)
-        logger.info(f"events data \n{events_data_list}")
+        #logger.info(f"events data \n{events_data_list}")
     else:
         logger.info("There is no new data to add from this batch.")
     logger.info("upating the helper table")
